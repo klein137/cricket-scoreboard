@@ -1530,17 +1530,28 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
 }
     
     document.addEventListener('DOMContentLoaded', () => {
-        setCurrentDate(); // Set date on load
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("view") === "live") {
-            document.getElementById("login-screen").style.display = "none";
-            document.querySelector(".app-container").style.display = "block";
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
-            alert("You are in view-only mode.");
-            enableLiveSync();
-            initializeSwipe();
+    setCurrentDate(); // Set date on load
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") === "live") {
+        document.getElementById("login-screen").style.display = "none";
+        document.querySelector(".app-container").style.display = "block";
+
+        // First, disable all interactive elements
+        document.querySelectorAll('button, input, select').forEach(el => {
+            el.disabled = true;
+        });
+
+        // Then, specifically enable the match summary button
+        const summaryButton = document.getElementById('Match Summary');
+        if (summaryButton) {
+            summaryButton.disabled = false;
         }
-    });
+
+        alert("You are in view-only mode.");
+        enableLiveSync();
+        initializeSwipe();
+    }
+});
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
@@ -1557,4 +1568,5 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
 </script>
 </body>
 </html>
+
 
