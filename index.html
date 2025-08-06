@@ -362,11 +362,11 @@ table, th, td {
             </div>
 
             <div class="match-controls">
-                <button onclick="startMatch()" class="action-btn" style="background: linear-gradient(135deg, var(--accent-green), #28a745);">Start Match</button>
-                <button onclick="switchInnings()" class="action-btn">Switch Innings</button>
-                <button onclick="resetMatch()" class="action-btn" style="background: linear-gradient(135deg, #c31432, var(--accent-red));">Reset Match</button>
-                <button onclick="showMatchSummary()" class="action-btn">Match Summary</button>
-            </div>
+    <button onclick="startMatch()" class="action-btn" style="background: linear-gradient(135deg, var(--accent-green), #28a745);">Start Match</button>
+    <button onclick="switchInnings()" class="action-btn">Switch Innings</button>
+    <button onclick="resetMatch()" class="action-btn" style="background: linear-gradient(135deg, #c31432, var(--accent-red));">Reset Match</button>
+    <button id="end-match-btn" class="action-btn">Match Summary</button>
+</div>
         </div>
         
         <div id="setup-page" class="page">
@@ -1542,7 +1542,7 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
         });
 
         // Then, specifically enable the match summary button
-        const summaryButton = document.getElementById('Match Summary');
+        const summaryButton = document.getElementById('end-match-btn');
         if (summaryButton) {
             summaryButton.disabled = false;
         }
@@ -1568,5 +1568,6 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
 </script>
 </body>
 </html>
+
 
 
