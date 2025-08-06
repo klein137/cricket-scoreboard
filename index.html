@@ -1529,20 +1529,29 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
     }
 }
     
-    document.addEventListener('DOMContentLoaded', () => {
+   document.addEventListener('DOMContentLoaded', () => {
     setCurrentDate(); // Set date on load
+
+    // THIS IS THE CRITICAL PART THAT WAS MISSING OR PLACED INCORRECTLY
+    // This code adds the click functionality to the summary button for all users.
+    const summaryButton = document.getElementById('end-match-btn');
+    if (summaryButton) {
+        summaryButton.addEventListener('click', () => {
+            showMatchSummary();
+        });
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("view") === "live") {
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
-        // First, disable all interactive elements
+        // First, disable all interactive elements for the viewer
         document.querySelectorAll('button, input, select').forEach(el => {
             el.disabled = true;
         });
 
-        // Then, specifically enable the match summary button
-        const summaryButton = document.getElementById('end-match-btn');
+        // Then, specifically re-enable the match summary button
         if (summaryButton) {
             summaryButton.disabled = false;
         }
@@ -1568,6 +1577,7 @@ html += `<div style="margin: 8px 0;">Extras: ${extras} (${breakdownText.join(', 
 </script>
 </body>
 </html>
+
 
 
 
