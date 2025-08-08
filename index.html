@@ -572,7 +572,7 @@
                 <button onclick="startMatch()" class="action-btn" style="background: linear-gradient(135deg, var(--accent-green), #28a745);">Start Match</button>
                 <button onclick="switchInnings()" class="action-btn">Switch Innings</button>
                 <button onclick="resetMatch()" class="action-btn" style="background: linear-gradient(135deg, #c31432, var(--accent-red));">Reset Match</button>
-                <button onclick="showMatchSummary()" class="action-btn">Match Summary</button>
+                <button id="end-match-btn" class="action-btn">Match Summary</button>
             </div>
         </div>
         
@@ -1887,17 +1887,37 @@ function updateTargetDisplay() {
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-        setCurrentDate();
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("view") === "live") {
-            document.getElementById("login-screen").style.display = "none";
-            document.querySelector(".app-container").style.display = "block";
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
-            alert("You are in view-only mode.");
-            enableLiveSync();
-            initializeSwipe();
+    setCurrentDate(); // Set date on load
+
+    // THIS IS THE CRITICAL PART THAT WAS MISSING OR PLACED INCORRECTLY
+    // This code adds the click functionality to the summary button for all users.
+    const summaryButton = document.getElementById('end-match-btn');
+    if (summaryButton) {
+        summaryButton.addEventListener('click', () => {
+            showMatchSummary();
+        });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") === "live") {
+        document.getElementById("login-screen").style.display = "none";
+        document.querySelector(".app-container").style.display = "block";
+
+        // First, disable all interactive elements for the viewer
+        document.querySelectorAll('button, input, select').forEach(el => {
+            el.disabled = true;
+        });
+
+        // Then, specifically re-enable the match summary button
+        if (summaryButton) {
+            summaryButton.disabled = false;
         }
-    });
+
+        alert("You are in view-only mode.");
+        enableLiveSync();
+        initializeSwipe();
+    }
+});
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
