@@ -836,23 +836,28 @@
         syncToFirebase();
     }
 
-    function enableLiveSync() {
-        firebase.database().ref("gameState").on("value", snapshot => {
+        function enableLiveSync() {
+        const gameStateRef = firebase.database().ref("gameState");
+        gameStateRef.on("value", snapshot => {
             if (snapshot.exists()) {
                 const fetchedState = snapshot.val();
-                
-                // Only update if there's a difference to prevent unnecessary re-renders
                 if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
                     gameState = fetchedState;
                     console.log("Game state updated from Firebase.");
-                    updateAllDisplay();
+                    // Call updateAllDisplay here to refresh the UI immediately
+                    updateAllDisplay(); 
                 }
             } else {
-                 console.log("No game state found in Firebase. Initializing display with default values.");
-                 updateAllDisplay();
+                console.log("No data found in Firebase. Waiting for manager to start the match.");
+                // This else block is also a good place to call updateAllDisplay to clear the UI
+                // if the match is reset, for a clean slate.
+                updateAllDisplay();
             }
+        }, error => {
+            console.error("Firebase sync failed:", error);
         });
     }
+
 
     function updateTeamName(team) {
         const input = document.getElementById(`team${team}-name`);
