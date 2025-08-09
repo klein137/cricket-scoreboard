@@ -839,24 +839,9 @@
     function enableLiveSync() {
     firebase.database().ref("gameState").on("value", snapshot => {
         if (snapshot.exists()) {
-            const fetchedState = snapshot.val();
-
-            // Check if bowler + both batsmen are selected in the fetched state
-            const bowlerSelected = fetchedState.currentBowler && fetchedState.currentBowler.trim() !== "";
-            const batsman1Selected = fetchedState.currentBatsmen[1] && fetchedState.currentBatsmen[1].trim() !== "";
-            const batsman2Selected = fetchedState.currentBatsmen[2] && fetchedState.currentBatsmen[2].trim() !== "";
-
-            // Update local gameState always when something changes in Firebase
-            if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
-                gameState = fetchedState;
-                updateAllDisplay();
-                console.log("Game state updated from Firebase.");
-            }
-
-            // Auto-trigger display refresh if bowler and both batsmen are selected
-            if (bowlerSelected && batsman1Selected && batsman2Selected) {
-                updateAllDisplay(); // ensure bowler, batsmen, over, last over, and target show instantly
-            }
+            gameState = snapshot.val();  // Always take latest
+            updateAllDisplay();          // Always refresh UI
+            console.log("Game state updated from Firebase (live sync).");
         }
     });
 }
@@ -1918,16 +1903,21 @@ function updateTargetDisplay() {
         });
 
         if (summaryButton) {
-            summaryButton.disabled = false;
+            summaryButton.disabled = false; // Still allow match summary in view mode
         }
 
         alert("You are in view-only mode.");
-        enableLiveSync();
+
+        // Load initial state from Firebase before enabling live sync
+        firebase.database().ref("gameState").once("value").then(snapshot => {
+            if (snapshot.exists()) {
+                gameState = snapshot.val();
+                updateAllDisplay(); // Render the initial scoreboard
+            }
+            enableLiveSync(); // Start continuous updates
+        });
+
         initializeSwipe();
-        
-        // **FIX**: Call updateAllDisplay() to render the initial state for viewers.
-        // The enableLiveSync() will handle subsequent updates, but this is needed for the first load.
-        updateAllDisplay();
     }
 });
 
