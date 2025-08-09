@@ -506,8 +506,9 @@
 
     <div class="app-container" style="display:none;">
     	
-        <div id="live-view" class="page active">
+    <div id="setup-page" class="page">
             <div class="header">
+        
                 <h1><span style="font-size: 1.5em; vertical-align: middle;">&#x1F3CF;</span> Match & Team Setup</h1>
                 <p>Configure teams and match rules</p> 
             </div>
@@ -578,7 +579,7 @@
             </div>
         </div>
         
-        <div id="setup-page" class="page">
+        <div id="live-view" class="page active">
             <div class="header">
                  <h1><span style="font-size: 1.5em; vertical-align: middle;">&#x1F3CF;</span> Live Scoreboard</h1>
                  <p id="current-date"></p> 
@@ -732,7 +733,7 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = ""; // Set your manager password here
+    const managerPassword = "110604"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIWln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
     firebase.initializeApp(firebaseConfig);
