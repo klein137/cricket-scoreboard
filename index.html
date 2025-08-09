@@ -840,11 +840,22 @@
     firebase.database().ref("gameState").on("value", snapshot => {
         if (snapshot.exists()) {
             const fetchedState = snapshot.val();
-            // Always update in view-only mode so live data shows instantly
+
+            // Check if bowler + both batsmen are selected in the fetched state
+            const bowlerSelected = fetchedState.currentBowler && fetchedState.currentBowler.trim() !== "";
+            const batsman1Selected = fetchedState.currentBatsmen[1] && fetchedState.currentBatsmen[1].trim() !== "";
+            const batsman2Selected = fetchedState.currentBatsmen[2] && fetchedState.currentBatsmen[2].trim() !== "";
+
+            // Update local gameState always when something changes in Firebase
             if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
                 gameState = fetchedState;
-                updateAllDisplay();  // ensures bowler, batsmen, overs, target update live
+                updateAllDisplay();
                 console.log("Game state updated from Firebase.");
+            }
+
+            // Auto-trigger display refresh if bowler and both batsmen are selected
+            if (bowlerSelected && batsman1Selected && batsman2Selected) {
+                updateAllDisplay(); // ensure bowler, batsmen, over, last over, and target show instantly
             }
         }
     });
