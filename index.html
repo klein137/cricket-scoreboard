@@ -836,28 +836,19 @@
         syncToFirebase();
     }
 
-        function enableLiveSync() {
-        const gameStateRef = firebase.database().ref("gameState");
-        gameStateRef.on("value", snapshot => {
-            if (snapshot.exists()) {
-                const fetchedState = snapshot.val();
-                if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
-                    gameState = fetchedState;
-                    console.log("Game state updated from Firebase.");
-                    // Call updateAllDisplay here to refresh the UI immediately
-                    updateAllDisplay(); 
-                }
-            } else {
-                console.log("No data found in Firebase. Waiting for manager to start the match.");
-                // This else block is also a good place to call updateAllDisplay to clear the UI
-                // if the match is reset, for a clean slate.
-                updateAllDisplay();
+    function enableLiveSync() {
+    firebase.database().ref("gameState").on("value", snapshot => {
+        if (snapshot.exists()) {
+            const fetchedState = snapshot.val();
+            // Always update in view-only mode so live data shows instantly
+            if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
+                gameState = fetchedState;
+                updateAllDisplay();  // ensures bowler, batsmen, overs, target update live
+                console.log("Game state updated from Firebase.");
             }
-        }, error => {
-            console.error("Firebase sync failed:", error);
-        });
-    }
-
+        }
+    });
+}
 
     function updateTeamName(team) {
         const input = document.getElementById(`team${team}-name`);
@@ -987,7 +978,7 @@
         ['batsman1-select', 'batsman2-select'].forEach(selectId => {
             const select = document.getElementById(selectId);
             if (!select) return;
-            const currentValue = gameState.currentBatsmen[selectId === 'batsman1-select' ? 1 : 2];
+            const currentValue = select.value;
             select.innerHTML = '<option value="">Select Batsman</option>';
             players.forEach(player => {
                 const isSelectedElsewhere = (selectId === 'batsman1-select' && player === gameState.currentBatsmen[2]) || (selectId === 'batsman2-select' && player === gameState.currentBatsmen[1]);
@@ -998,7 +989,7 @@
                     select.appendChild(option);
                 }
             });
-            select.value = currentValue || '';
+            select.value = currentValue;
         });
     }
 
@@ -1876,7 +1867,7 @@ function updateTargetDisplay() {
         appContainer.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
         appContainer.addEventListener('touchend', e => { touchendX = e.changedTouches[0].screenX; handleSwipeGesture(); });
     }
-    
+
     function updatePageDisplay() {
         if (!pages || pages.length === 0) return;
         pages.forEach((page, index) => {
@@ -1887,34 +1878,18 @@ function updateTargetDisplay() {
         });
     }
 
-    // --- CRITICAL FIX: REFRESH UI ON PAGE SWIPE ---
     function handleSwipeGesture() {
-        let pageChanged = false;
         if (touchendX < touchstartX - swipeThreshold) {
-            if (currentPageIndex < pages.length - 1) { 
-                currentPageIndex++; 
-                pageChanged = true;
-            }
+            if (currentPageIndex < pages.length - 1) { currentPageIndex++; updatePageDisplay(); }
         }
         if (touchendX > touchstartX + swipeThreshold) {
-            if (currentPageIndex > 0) { 
-                currentPageIndex--; 
-                pageChanged = true;
-            }
-        }
-        
-        if (pageChanged) {
-            updatePageDisplay();
-            // Call the main display update function to sync all UI elements
-            updateAllDisplay(); 
+            if (currentPageIndex > 0) { currentPageIndex--; updatePageDisplay(); }
         }
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-    setCurrentDate(); // Set date on load
+    setCurrentDate();
 
-    // This is the critical part that was missing or placed incorrectly
-    // This code adds the click functionality to the summary button for all users.
     const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
         summaryButton.addEventListener('click', () => {
@@ -1927,12 +1902,10 @@ function updateTargetDisplay() {
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
-        // First, disable all interactive elements for the viewer
         document.querySelectorAll('button, input, select').forEach(el => {
             el.disabled = true;
         });
 
-        // Then, specifically re-enable the match summary button
         if (summaryButton) {
             summaryButton.disabled = false;
         }
@@ -1940,8 +1913,13 @@ function updateTargetDisplay() {
         alert("You are in view-only mode.");
         enableLiveSync();
         initializeSwipe();
+        
+        // **FIX**: Call updateAllDisplay() to render the initial state for viewers.
+        // The enableLiveSync() will handle subsequent updates, but this is needed for the first load.
+        updateAllDisplay();
     }
 });
+
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
