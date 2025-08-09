@@ -730,7 +730,7 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = "110604"; // Set your manager password here
+    const managerPassword = ""; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIwln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
     firebase.initializeApp(firebaseConfig);
@@ -837,14 +837,26 @@
     }
 
     function enableLiveSync() {
+        let isFirstLoad = true;
+        
         firebase.database().ref("gameState").on("value", snapshot => {
             if (snapshot.exists()) {
                 const fetchedState = snapshot.val();
+                
                 if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
                     gameState = fetchedState;
                     console.log("Game state updated from Firebase.");
                     updateAllDisplay();
                 }
+                
+                if (isFirstLoad) {
+                    updateAllDisplay();
+                    isFirstLoad = false;
+                }
+            } else if (isFirstLoad) {
+                 console.log("No game state found in Firebase. Initializing display with default values.");
+                 updateAllDisplay();
+                 isFirstLoad = false;
             }
         });
     }
@@ -1887,8 +1899,10 @@ function updateTargetDisplay() {
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-    setCurrentDate();
+    setCurrentDate(); // Set date on load
 
+    // THIS IS THE CRITICAL PART THAT WAS MISSING OR PLACED INCORRECTLY
+    // This code adds the click functionality to the summary button for all users.
     const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
         summaryButton.addEventListener('click', () => {
@@ -1901,10 +1915,12 @@ function updateTargetDisplay() {
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
+        // First, disable all interactive elements for the viewer
         document.querySelectorAll('button, input, select').forEach(el => {
             el.disabled = true;
         });
 
+        // Then, specifically re-enable the match summary button
         if (summaryButton) {
             summaryButton.disabled = false;
         }
@@ -1912,13 +1928,8 @@ function updateTargetDisplay() {
         alert("You are in view-only mode.");
         enableLiveSync();
         initializeSwipe();
-        
-        // **FIX**: Call updateAllDisplay() to render the initial state for viewers.
-        // The enableLiveSync() will handle subsequent updates, but this is needed for the first load.
-        updateAllDisplay();
     }
 });
-
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
