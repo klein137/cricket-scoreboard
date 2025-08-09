@@ -730,7 +730,7 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = "1605"; // Set your manager password here
+    const managerPassword = "123"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIwln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
     firebase.initializeApp(firebaseConfig);
@@ -839,7 +839,7 @@
     function enableLiveSync() {
     firebase.database().ref("gameState").on("value", snapshot => {
         if (snapshot.exists()) {
-            gameState = snapshot.val();  // Always take latest
+            gameState = snapshot.val();  // Always take latest state
             updateAllDisplay();          // Always refresh UI
             console.log("Game state updated from Firebase (live sync).");
         }
@@ -1065,17 +1065,17 @@
     const playerName = select.value;
     gameState.currentBatsmen[batsmanNumber] = playerName || null;
     updateAllDisplay();
-    syncLiveScore(true); // force push to Firebase
+    syncToFirebase(true); // Force push to Firebase immediately
 }
 
 function updateBowler() {
     const bowlerName = document.getElementById('bowler-select').value;
     gameState.currentBowler = bowlerName || null;
     if (bowlerName && !gameState.bowlerStats[bowlerName]) {
-        gameState.bowlerStats[bowlerName] = { overs: 0, maidens: 0, balls: 0, runs: 0, wickets: 0, economy: 0 };
+        gameState.bowlerStats[bowlerName] = { overs: 0, maidens:0, balls: 0, runs: 0, wickets: 0, economy: 0 };
     }
     updateAllDisplay();
-    syncLiveScore(true); // force push to Firebase
+    syncToFirebase(true); // Force push to Firebase immediately
 }
     
     function processBall(ball) {
