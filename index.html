@@ -730,7 +730,7 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = ""; // Set your manager password here
+    const managerPassword = "110604"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIwln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
     firebase.initializeApp(firebaseConfig);
@@ -837,26 +837,19 @@
     }
 
     function enableLiveSync() {
-        let isFirstLoad = true;
-        
         firebase.database().ref("gameState").on("value", snapshot => {
             if (snapshot.exists()) {
                 const fetchedState = snapshot.val();
                 
+                // Only update if there's a difference to prevent unnecessary re-renders
                 if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
                     gameState = fetchedState;
                     console.log("Game state updated from Firebase.");
                     updateAllDisplay();
                 }
-                
-                if (isFirstLoad) {
-                    updateAllDisplay();
-                    isFirstLoad = false;
-                }
-            } else if (isFirstLoad) {
+            } else {
                  console.log("No game state found in Firebase. Initializing display with default values.");
                  updateAllDisplay();
-                 isFirstLoad = false;
             }
         });
     }
@@ -1915,7 +1908,7 @@ function updateTargetDisplay() {
     document.addEventListener('DOMContentLoaded', () => {
     setCurrentDate(); // Set date on load
 
-    // THIS IS THE CRITICAL PART THAT WAS MISSING OR PLACED INCORRECTLY
+    // This is the critical part that was missing or placed incorrectly
     // This code adds the click functionality to the summary button for all users.
     const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
