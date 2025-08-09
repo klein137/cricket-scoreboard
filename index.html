@@ -574,7 +574,7 @@
                 <button onclick="startMatch()" class="action-btn" style="background: linear-gradient(135deg, var(--accent-green), #28a745);">Start Match</button>
                 <button onclick="switchInnings()" class="action-btn">Switch Innings</button>
                 <button onclick="resetMatch()" class="action-btn" style="background: linear-gradient(135deg, #c31432, var(--accent-red));">Reset Match</button>
-                <button onclick="showMatchSummary()" class="action-btn">Match Summary</button>
+                <button id="end-match-btn" class="action-btn">Match Summary</button>
             </div>
         </div>
         
@@ -732,9 +732,9 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = "110604"; // Set your manager password here
+    const managerPassword = ""; // Set your manager password here
 
-    const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIwln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
+    const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIWln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
@@ -1123,11 +1123,12 @@
         if (gameState.bowlerStats[gameState.currentBowler]) {
             gameState.bowlerStats[gameState.currentBowler].balls++;
         }
-
-        if (ball.type !== 'extra' || ball.extraType === 'noball') {
-            if (gameState.playerStats[onStrikeBatsman]) {
-                gameState.playerStats[onStrikeBatsman].balls++;
-            }
+    }
+    
+    // Only increment batsman's ball count for legal deliveries or no-balls
+    if (ball.legalDelivery || ball.extraType === 'noball') {
+        if (gameState.playerStats[onStrikeBatsman]) {
+            gameState.playerStats[onStrikeBatsman].balls++;
         }
     }
 
@@ -1144,18 +1145,18 @@
 
     if (
         ball.runs % 2 !== 0 &&
-        (ball.type === 'runs' || ball.extraType === 'bye' || ball.extraType === 'legbye')
+        (ball.type === 'runs' || ball.extraType === 'bye' || ball.extraType === 'legbye' || ball.extraType === 'overthrow')
     ) {
         swapBatsmen(false);
     }
+    
+    updateAllDisplay();
+    checkMatchEnd();
+    syncLiveScore();
 
     if (battingTeam.balls === 6) {
         endOver(true);
-    } else {
-        updateAllDisplay();
-        checkMatchEnd();
-        syncLiveScore();
-    }
+    } 
 }
 
 function addRuns(runs) {
@@ -1165,25 +1166,37 @@ function addRuns(runs) {
         legalDelivery: true
     });
 }
-    function addExtra(type) {
+
+function addExtra(type) {
     let runs = 0;
     let legalDelivery = false;
+    let extraRunsInput = '0';
+    let promptText = '';
 
     switch (type) {
         case 'wide':
         case 'noball':
             runs = 1;
+            promptText = `Enter additional runs (e.g., if a wide and they run 2, enter 2):`;
             break;
         case 'bye':
         case 'legbye':
         case 'overthrow':
         case 'penalty':
             legalDelivery = true;
+            promptText = `Enter runs for ${type}:`;
             break;
     }
 
-    let extraRunsInput = prompt(`Enter additional runs for ${type} (e.g., for ${type} + 2, enter 2):`, '0');
-    runs += parseInt(extraRunsInput) || 0;
+    extraRunsInput = prompt(promptText, '0');
+    let additionalRuns = parseInt(extraRunsInput) || 0;
+
+    // Handle extra runs for wides and noballs
+    if (type === 'wide' || type === 'noball') {
+        runs += additionalRuns;
+    } else {
+        runs = additionalRuns;
+    }
 
     if (runs > 0 || !legalDelivery) {
         processBall({
@@ -1234,11 +1247,12 @@ function addRuns(runs) {
         gameState.teams[gameState.battingTeam].outPlayers.push(outBatsmanName);
         gameState.currentBatsmen[outBatsmanSelection] = null;
         if (gameState.teams[gameState.battingTeam].wickets >= gameState.teams[gameState.battingTeam].players.length - 1) { handleInningsCompletion(); }
-        if (gameState.teams[gameState.battingTeam].balls === 6) { endOver(true); }
         
         updateAllDisplay();
         closeModal();
         syncLiveScore();
+        
+        if (gameState.teams[gameState.battingTeam].balls === 6 && !gameState.inningsComplete) { endOver(true); }
     }
 
     function closeModal() { document.getElementById('wicketModal').style.display = 'none'; }
@@ -1262,9 +1276,11 @@ function addRuns(runs) {
         const defendingTeam = gameState.teams[gameState.bowlingTeam];
         if (chasingTeam.score >= gameState.target) {
             gameState.matchOver = true;
+            updateTargetDisplay(); // Update display with win message
             alert(`${chasingTeam.name} won by ${chasingTeam.players.length - 1 - chasingTeam.wickets} wickets!`);
         } else if (chasingTeam.overs >= gameState.totalOvers || chasingTeam.wickets >= chasingTeam.players.length - 1) {
             gameState.matchOver = true;
+            updateTargetDisplay(); // Update display with win message
             if (chasingTeam.score === gameState.target - 1) { alert("Match Tied!"); }
             else { alert(`${defendingTeam.name} won by ${gameState.target - 1 - chasingTeam.score} runs!`); }
         }
@@ -1330,31 +1346,15 @@ function addRuns(runs) {
             legalBallsInOver++;
         }
 
-        // Correctly handle extra runs with specific symbols
         if (ball.type === 'extra') {
             let extraSymbol = '';
             switch (ball.extraType) {
-                case 'wide':
-                    extraSymbol = 'WD';
-                    break;
-                case 'noball':
-                    extraSymbol = 'NB';
-                    break;
-                case 'bye':
-                    extraSymbol = 'B';
-                    break;
-                case 'legbye':
-                    extraSymbol = 'LB';
-                    break;
-                case 'overthrow':
-                    extraSymbol = 'O';
-                    break;
-                case 'penalty':
-                    extraSymbol = 'P';
-                    break;
-                default:
-                    extraSymbol = ball.extraType.toUpperCase();
-                    break;
+                case 'wide': extraSymbol = 'WD'; break;
+                case 'noball': extraSymbol = 'NB'; break;
+                case 'bye': extraSymbol = 'B'; break;
+                case 'legbye': extraSymbol = 'LB'; break;
+                case 'overthrow': extraSymbol = 'O'; break;
+                case 'penalty': extraSymbol = 'P'; break;
             }
             text = `${ball.runs}${extraSymbol}`;
             ballDiv.classList.add('extra');
@@ -1371,7 +1371,6 @@ function addRuns(runs) {
         container.appendChild(ballDiv);
     });
 
-    // Only count legal deliveries towards the 6-ball over count
     const totalPendingBalls = 6 - legalBallsInOver;
 
     for (let i = 0; i < totalPendingBalls; i++) {
@@ -1392,29 +1391,20 @@ function addRuns(runs) {
     if (!display) return;
 
     if (gameState.lastOver && gameState.lastOver.length > 0) {
-        // Create a map for the correct extra symbols
         const extraSymbols = {
-            'wide': 'WD',
-            'noball': 'NB',
-            'bye': 'B',
-            'legbye': 'LB',
-            'overthrow': 'O',
-            'penalty': 'P'
+            'wide': 'WD', 'noball': 'NB', 'bye': 'B', 'legbye': 'LB', 'overthrow': 'O', 'penalty': 'P'
         };
 
         let overRuns = gameState.lastOver.reduce((acc, b) => acc + b.runs, 0);
 
         display.textContent = gameState.lastOver.map(b => {
-            // Check for wicket first
             if (b.type === 'wicket') {
                 return 'W';
             }
-            // Check for extras and use the symbol map
             if (b.extraType) {
                 const symbol = extraSymbols[b.extraType] || b.extraType.toUpperCase();
                 return `${b.runs}${symbol}`;
             }
-            // Default to displaying runs
             return b.runs;
         }).join('  ') + `  (${overRuns} runs)`;
     } else {
@@ -1433,11 +1423,12 @@ function addRuns(runs) {
         if (!gameState.battingTeam) return;
         const battingTeam = gameState.teams[gameState.battingTeam];
         if (!isAuto && battingTeam.balls < 6 && battingTeam.balls > 0) { if (!confirm('Over not complete. End anyway?')) return; }
+        
         const bowlerName = gameState.currentBowler;
         if (bowlerName) {
             let runsInOver = gameState.currentOver.reduce((total, ball) => total + ball.runs, 0);
             let legalDeliveriesInOver = gameState.currentOver.filter(ball => ball.legalDelivery).length;
-            if (legalDeliveriesInOver >= 6 && runsInOver === 0 && gameState.bowlerStats[bowlerName]) { gameState.bowlerStats[bowlerName].maidens++; }
+            if (legalDeliveriesInOver === 6 && runsInOver === 0 && gameState.bowlerStats[bowlerName]) { gameState.bowlerStats[bowlerName].maidens++; }
         }
         
         battingTeam.overs++;
@@ -1447,7 +1438,6 @@ function addRuns(runs) {
             gameState.bowlerStats[bowlerName].overs = Math.floor(gameState.bowlerStats[bowlerName].balls / 6); 
         }
         
-        // Update the lastLastOver before updating lastOver
         gameState.lastLastOver = gameState.lastOver;
         gameState.lastOver = [...gameState.currentOver];
         gameState.currentOver = [];
@@ -1672,90 +1662,94 @@ function undoLastBall() {
     const bowlerName = lastBall.bowler;
     const bowlerStats = gameState.bowlerStats[bowlerName];
 
+    // Revert score and stats
     battingTeam.score -= lastBall.runs;
 
-    // Revert extras
+    if (bowlerStats) {
+        bowlerStats.runs -= lastBall.runs;
+    }
+
     if (lastBall.type === 'extra') {
-        if (battingTeam.extras) battingTeam.extras -= lastBall.runs;
-        if (battingTeam.extrasBreakdown && battingTeam.extrasBreakdown[lastBall.extraType] !== undefined) {
+        if (!battingTeam.extras) battingTeam.extras = 0;
+        battingTeam.extras -= lastBall.runs;
+        if (!battingTeam.extrasBreakdown) battingTeam.extrasBreakdown = {};
+        if (battingTeam.extrasBreakdown[lastBall.extraType] !== undefined) {
             battingTeam.extrasBreakdown[lastBall.extraType] -= lastBall.runs;
         }
     }
 
-    // Revert bowler stats
-    if (bowlerStats) {
-        bowlerStats.runs -= lastBall.runs;
-        if (lastBall.type === 'wicket') {
-            bowlerStats.wickets--;
-        }
-        if (lastBall.legalDelivery) {
+    if (lastBall.legalDelivery) {
+        battingTeam.balls--;
+        if (bowlerStats) {
             bowlerStats.balls--;
         }
     }
-
-    // Identify the batsman on strike for the last ball
-    const batsmanOnStrikeForLastBall = lastBall.onStrikeBatsman;
-    const batsmanStats = gameState.playerStats[batsmanOnStrikeForLastBall];
-
-    // Revert batsman stats
-    if (batsmanStats) {
-        batsmanStats.runs -= lastBall.runs;
-        if (lastBall.runs === 4) {
-            batsmanStats.fours--;
-        }
-        if (lastBall.runs === 6) {
-            batsmanStats.sixes--;
-        }
-        // Only decrement balls if it was a legal delivery and not an extra that doesn't count towards the batsman
-        if (lastBall.legalDelivery && lastBall.type !== 'extra') {
+    
+    // Revert batsman ball count only for legal deliveries and noballs
+    if (lastBall.legalDelivery || lastBall.extraType === 'noball') {
+        const batsmanStats = gameState.playerStats[lastBall.onStrikeBatsman];
+        if (batsmanStats) {
             batsmanStats.balls--;
         }
     }
-
-    // Handle wicket reversal
-    if (lastBall.type === 'wicket') {
-        battingTeam.wickets--;
-        const outBatsmanName = lastBall.outBatsman;
-        const index = battingTeam.outPlayers.indexOf(outBatsmanName);
-        if (index !== -1) {
-            battingTeam.outPlayers.splice(index, 1);
+    
+    if (lastBall.type === 'runs') {
+        const batsmanStats = gameState.playerStats[lastBall.onStrikeBatsman];
+        if (batsmanStats) {
+            batsmanStats.runs -= lastBall.runs;
+            if (lastBall.runs === 4) batsmanStats.fours--;
+            if (lastBall.runs === 6) batsmanStats.sixes--;
         }
-        // Restore the batsman who was out to the crease
-        gameState.currentBatsmen[lastBall.onStrike] = outBatsmanName;
-        gameState.lastWicket = null;
     }
 
+    // Revert wicket
+    if (lastBall.type === 'wicket') {
+        battingTeam.wickets--;
+        if (bowlerStats) {
+            bowlerStats.wickets--;
+        }
+        battingTeam.outPlayers.pop();
+        gameState.currentBatsmen[lastBall.onStrike] = lastBall.outBatsman;
+        gameState.lastWicket = null; 
+    }
+    
     // Revert over progression
     const wasOverCompleted = gameState.currentOver.length === 0 && gameState.lastOver;
     if (wasOverCompleted) {
+        // Restore current over from last over
         gameState.currentOver = [...gameState.lastOver];
-        gameState.currentOver.pop();
         gameState.lastOver = gameState.lastLastOver;
         gameState.lastLastOver = null;
+
+        // Correct team and bowler overs/balls
         battingTeam.overs--;
         battingTeam.balls = 5;
-    } else {
-        gameState.currentOver.pop();
-        if (lastBall.legalDelivery) {
-            battingTeam.balls--;
+        if (bowlerStats) {
+            bowlerStats.overs--;
         }
     }
+    gameState.currentOver.pop();
 
+    // Revert batsman swap
+    if (lastBall.runs % 2 !== 0 && (lastBall.type === 'runs' || lastBall.extraType === 'bye' || lastBall.extraType === 'legbye' || lastBall.extraType === 'overthrow')) {
+        swapBatsmen(false);
+    }
+    
     // Restore the on-strike batsman
     gameState.onStrike = lastBall.onStrike;
     
-    // Restore the current and last bowler
+    // Revert bowler change if a new bowler was selected after an over
     if (wasOverCompleted) {
         gameState.currentBowler = bowlerName;
-        gameState.lastBowler = gameState.lastOver ? gameState.lastOver[0].bowler : null;
-    } else if (gameState.currentOver.length === 0 && battingTeam.balls === 0) {
-        gameState.currentBowler = null;
-        gameState.lastBowler = null; 
+        if (gameState.lastOver && gameState.lastOver.length > 0) {
+            gameState.lastBowler = gameState.lastOver[0].bowler;
+        } else {
+            gameState.lastBowler = null;
+        }
     } else {
-        gameState.currentBowler = bowlerName;
-        gameState.lastBowler = null;
+        // We're in the middle of an over, so no bowler change.
     }
-
+    
     updateAllDisplay();
     syncLiveScore();
 }
@@ -1809,16 +1803,13 @@ function updateTargetDisplay() {
     const targetInfoDiv = document.getElementById('target-info');
     const displayMessage = targetInfoDiv.querySelector('p');
 
-    // Logic 1: Toss Info
     const isFirstInning = gameState.currentInnings === gameState.toss.winner;
     const currentBalls = gameState.teams[gameState.battingTeam] ? (gameState.teams[gameState.battingTeam].overs * 6) + gameState.teams[gameState.battingTeam].balls : 0;
 
     if (gameState.matchStarted && isFirstInning && currentBalls <= 12) {
         targetInfoDiv.style.display = 'block';
         displayMessage.innerHTML = `${gameState.teams[gameState.toss.winner].name} won the toss and opted to ${gameState.toss.decision} first.`;
-    } 
-    // Logic 3: Match Completion
-    else if (gameState.matchOver) {
+    } else if (gameState.matchOver) {
         targetInfoDiv.style.display = 'block';
         let resultMessage = '';
         const chasingTeam = gameState.teams[gameState.battingTeam];
@@ -1833,9 +1824,7 @@ function updateTargetDisplay() {
             resultMessage = 'Match Tied!';
         }
         displayMessage.innerHTML = `Match Completed! ${resultMessage}`;
-    } 
-    // Logic 2: Target Info
-    else if (gameState.currentInnings === 2 && gameState.target !== null) {
+    } else if (gameState.currentInnings === 2 && gameState.target !== null) {
         const chasingTeam = gameState.teams[gameState.battingTeam];
         targetInfoDiv.style.display = 'block';
 
@@ -1850,9 +1839,7 @@ function updateTargetDisplay() {
         if (ballsRemainingEl) ballsRemainingEl.textContent = Math.max(0, ballsRemaining);
         
         displayMessage.innerHTML = `<span id="chasing-team-name">${chasingTeam.name}</span> needs <strong style="color:var(--accent-green); font-size:1.2em" id="runs-needed">${Math.max(0, runsNeeded)}</strong> runs from <strong style="color:var(--accent-green); font-size:1.2em" id="balls-remaining">${Math.max(0, ballsRemaining)}</strong> balls to win.`;
-    } 
-    // Default: Hide the display
-    else {
+    } else {
         targetInfoDiv.style.display = 'none';
     }
 }
@@ -1889,19 +1876,39 @@ function updateTargetDisplay() {
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-        setCurrentDate();
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("view") === "live") {
-            document.getElementById("login-screen").style.display = "none";
-            document.querySelector(".app-container").style.display = "block";
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
-            alert("You are in view-only mode.");
-            // Call updateAllDisplay here to populate the scoreboard from the start.
-            enableLiveSync();
+    setCurrentDate(); // Set date on load
+
+    // THIS IS THE CRITICAL PART THAT WAS MISSING OR PLACED INCORRECTLY
+    // This code adds the click functionality to the summary button for all users.
+    const summaryButton = document.getElementById('end-match-btn');
+    if (summaryButton) {
+        summaryButton.addEventListener('click', () => {
+            showMatchSummary();
+        });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") === "live") {
+        document.getElementById("login-screen").style.display = "none";
+        document.querySelector(".app-container").style.display = "block";
+
+        // First, disable all interactive elements for the viewer
+        document.querySelectorAll('button, input, select').forEach(el => {
+            el.disabled = true;
+        });
+
+        // Then, specifically re-enable the match summary button
+        if (summaryButton) {
+            summaryButton.disabled = false;
+        }
+
+        alert("You are in view-only mode.");
+        enableLiveSync();
             updateAllDisplay();
             initializeSwipe();
         }
     });
+            
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
