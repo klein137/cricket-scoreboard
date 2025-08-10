@@ -2005,6 +2005,12 @@ function updatePageDisplay() {
     } else {
         // Manager mode logic
         loadGameStateFromLocalStorage();
+        // ➡️ ADD THIS LINE: If local storage exists, also sync it to Firebase.
+        // This handles cases where the manager reloads the page.
+        const savedState = localStorage.getItem("liveGameState");
+        if (savedState) {
+            syncLiveScore();
+        }
         initializeSwipe();
     }
 });
@@ -2017,10 +2023,12 @@ function updatePageDisplay() {
             document.querySelector('.app-container').style.display = 'block';
             loadGameStateFromLocalStorage();
             initializeSwipe();
+            
+            // ➡️ ADD THIS LINE: Immediately sync to Firebase after a successful login.
+            syncLiveScore();
+
         } else {
             alert("Incorrect password!");
         }
     }
 </script>
-</body>
-</html>
