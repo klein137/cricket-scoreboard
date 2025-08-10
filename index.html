@@ -47,20 +47,18 @@
         }
 
         .page {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    padding: 20px;
-    box-sizing: border-box;
-    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-    transform: translateX(100%);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth; /* Added for smooth scrolling */
-}
-
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transform: translateX(100%);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
         .page.active {
             transform: translateX(0);
@@ -400,6 +398,13 @@
             100% { opacity: 0.5; }
         }
         
+		.view-only {
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+		
         .match-controls {
     /* ADD these lines to make buttons same size and create a 2x2 grid */
     display: grid;
@@ -574,7 +579,7 @@
                 <button onclick="startMatch()" class="action-btn" style="background: linear-gradient(135deg, var(--accent-green), #28a745);">Start Match</button>
                 <button onclick="switchInnings()" class="action-btn">Switch Innings</button>
                 <button onclick="resetMatch()" class="action-btn" style="background: linear-gradient(135deg, #c31432, var(--accent-red));">Reset Match</button>
-                <button onclick="showMatchSummary()" class="action-btn">Match Summary</button>
+                <button id="end-match-btn" class="action-btn">Match Summary</button>
             </div>
         </div>
         
@@ -734,7 +739,7 @@
     let isManagerLoggedIn = false;
     const managerPassword = ""; // Set your manager password here
 
-    const firebaseConfig = {'apiKey': 'AIzaSyBzBNBHB7ZIwln__xPi5RqWUEmqhxTsIBM', 'authDomain': 'cricket-scoreboard-f7107.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-f7107-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-f7107', 'storageBucket': 'cricket-scoreboard-f7107.appspot.com', 'messagingSenderId': '19455465862', 'appId': '1:19455465862:web:b4f9aaeb2876b0455eb407'};
+    const firebaseConfig = {'apiKey': 'AIzaSyCEPyZgDfSRvYk1Af91rF68dx_sGst_IfY', 'authDomain': 'cricket-scoreboard-5fb85.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-5fb85-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-5fb85', 'storageBucket': 'cricket-scoreboard-5fb85.firebasestorage.app', 'messagingSenderId': '66879541275', 'appId': '1:66879541275:web:a96828556a871af40ae8be','measurementId': 'G-14SVEMWDPF'};
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
@@ -834,22 +839,41 @@
     }
 
     function syncLiveScore() {
-        localStorage.setItem("liveGameState", JSON.stringify(gameState));
-        syncToFirebase();
+    // Save locally
+    localStorage.setItem("liveGameState", JSON.stringify(gameState));
+
+    // Push to Firebase only if manager is logged in
+    if (isManagerLoggedIn) {
+        firebase.database().ref("gameState").set(gameState)
+            .then(() => console.log("Game state synced to Firebase."))
+            .catch(error => console.error("Firebase sync failed:", error));
     }
+}
+
 
     function enableLiveSync() {
-        firebase.database().ref("gameState").on("value", snapshot => {
-            if (snapshot.exists()) {
-                const fetchedState = snapshot.val();
-                if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
-                    gameState = fetchedState;
-                    console.log("Game state updated from Firebase.");
-                    updateAllDisplay();
-                }
+    const ref = firebase.database().ref("gameState");
+
+    // 🔹 Fetch current game state immediately for viewers
+    ref.once("value").then(snapshot => {
+        if (snapshot.exists()) {
+            gameState = snapshot.val();
+            updateAllDisplay();
+        }
+    });
+
+    // 🔹 Keep listening for updates
+    ref.on("value", snapshot => {
+        if (snapshot.exists()) {
+            const fetchedState = snapshot.val();
+            if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
+                gameState = fetchedState;
+                updateAllDisplay();
             }
-        });
-    }
+        }
+    });
+}
+
 
     function updateTeamName(team) {
         const input = document.getElementById(`team${team}-name`);
@@ -1102,14 +1126,19 @@
     ball.onStrike = gameState.onStrike;
     ball.bowler = gameState.currentBowler;
 
+    // Add runs to team score
     battingTeam.score += ball.runs;
+
+    // Add runs to bowler stats
     if (gameState.bowlerStats[gameState.currentBowler]) {
         gameState.bowlerStats[gameState.currentBowler].runs += ball.runs;
     }
 
+    // Handle extras
     if (ball.type === 'extra') {
         if (!battingTeam.extras) battingTeam.extras = 0;
         battingTeam.extras += ball.runs;
+
         if (!battingTeam.extrasBreakdown) {
             battingTeam.extrasBreakdown = { wide: 0, noball: 0, bye: 0, legbye: 0, overthrow: 0, penalty: 0 };
         }
@@ -1118,6 +1147,7 @@
         }
     }
 
+    // Handle legal deliveries
     if (ball.legalDelivery) {
         battingTeam.balls++;
         if (gameState.bowlerStats[gameState.currentBowler]) {
@@ -1131,6 +1161,7 @@
         }
     }
 
+    // Handle runs for batsman
     if (ball.type === 'runs') {
         if (gameState.playerStats[onStrikeBatsman]) {
             gameState.playerStats[onStrikeBatsman].runs += ball.runs;
@@ -1139,7 +1170,8 @@
         }
     }
 
-    gameState.currentOver.push(ball);
+    // Add ball to over & history
+     gameState.currentOver.push(ball);
     gameState.ballHistory.push(ball);
 
     if (
@@ -1152,11 +1184,13 @@
     if (battingTeam.balls === 6) {
         endOver(true);
     } else {
+        // **FIX**: Call updateAllDisplay() and sync after every ball
         updateAllDisplay();
         checkMatchEnd();
-        syncLiveScore();
+        syncLiveScore(true);
     }
 }
+
 
 function addRuns(runs) {
     processBall({
@@ -1463,11 +1497,15 @@ function addRuns(runs) {
     }
     
     function swapBatsmen(showAlert = true) {
-        if (!gameState.currentBatsmen[1] || !gameState.currentBatsmen[2]) { if (showAlert) alert('Both batsmen must be selected to swap.'); return; }
-        gameState.onStrike = gameState.onStrike === 1 ? 2 : 1;
-        updateAllDisplay();
-        if(showAlert) syncLiveScore();
+    if (!gameState.currentBatsmen[1] || !gameState.currentBatsmen[2]) {
+        if (showAlert) alert('Both batsmen must be selected to swap.');
+        return;
     }
+    gameState.onStrike = gameState.onStrike === 1 ? 2 : 1;
+    updateAllDisplay();
+    // **FIX**: Force a sync after swapping batsmen
+    syncLiveScore(true);
+}
     
     function retireBatsman() {
         const num = gameState.onStrike;
@@ -1862,22 +1900,70 @@ function updateTargetDisplay() {
             const container = document.getElementById("extra-buttons-container");
             container.classList.toggle("extra-visible");
         }
-    function initializeSwipe() {
-        pages = document.querySelectorAll('.page');
+		
+		function goToNextPage() {
+    if (currentPageIndex < pages.length - 1) {
+        currentPageIndex++;
         updatePageDisplay();
-        appContainer.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; });
-        appContainer.addEventListener('touchend', e => { touchendX = e.changedTouches[0].screenX; handleSwipeGesture(); });
     }
+}
 
-    function updatePageDisplay() {
-        if (!pages || pages.length === 0) return;
-        pages.forEach((page, index) => {
-            page.classList.remove('active', 'left', 'right');
-            if (index === currentPageIndex) { page.classList.add('active'); }
-            else if (index < currentPageIndex) { page.classList.add('left'); }
-            else { page.classList.add('right'); }
-        });
+function goToPreviousPage() {
+    if (currentPageIndex > 0) {
+        currentPageIndex--;
+        updatePageDisplay();
     }
+}
+
+// Optional: Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') {
+        goToNextPage();
+    } else if (e.key === 'ArrowLeft') {
+        goToPreviousPage();
+    }
+});
+
+		
+    function initializeSwipe() {
+    pages = document.querySelectorAll('.page');
+    updatePageDisplay();
+
+    // Touch events for mobile
+    appContainer.addEventListener('touchstart', e => {
+        touchstartX = e.changedTouches[0].screenX;
+    });
+
+    appContainer.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        handleSwipeGesture();
+    });
+
+    // Mouse events for desktop
+    appContainer.addEventListener('mousedown', e => {
+        touchstartX = e.screenX; // Use same variable for consistency
+    });
+
+    appContainer.addEventListener('mouseup', e => {
+        touchendX = e.screenX;
+        handleSwipeGesture();
+    });
+}
+
+function updatePageDisplay() {
+    if (!pages || pages.length === 0) return;
+    pages.forEach((page, index) => {
+        page.classList.remove('active', 'left', 'right');
+        if (index === currentPageIndex) {
+            page.classList.add('active');
+        } else if (index < currentPageIndex) {
+            page.classList.add('left');
+        } else {
+            page.classList.add('right');
+        }
+    });
+}
+
 
     function handleSwipeGesture() {
         if (touchendX < touchstartX - swipeThreshold) {
@@ -1889,19 +1975,39 @@ function updateTargetDisplay() {
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-        setCurrentDate();
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("view") === "live") {
-            document.getElementById("login-screen").style.display = "none";
-            document.querySelector(".app-container").style.display = "block";
-            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
-            alert("You are in view-only mode.");
-            // Call updateAllDisplay here to populate the scoreboard from the start.
-            enableLiveSync();
-            updateAllDisplay();
-            initializeSwipe();
+    setCurrentDate();
+
+    const summaryButton = document.getElementById('end-match-btn');
+    if (summaryButton) {
+        summaryButton.addEventListener('click', () => {
+            showMatchSummary();
+        });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") === "live") {
+        document.getElementById("login-screen").style.display = "none";
+        document.querySelector(".app-container").style.display = "block";
+
+        document.querySelectorAll('button, input, select').forEach(el => {
+            el.disabled = true;
+        });
+
+        if (summaryButton) {
+            summaryButton.disabled = false;
         }
-    });
+
+        alert("You are in view-only mode.");
+        // This is the correct way: the listener will fire with the initial data
+        // as soon as the connection is established.
+        enableLiveSync();
+        initializeSwipe();
+    } else {
+        // Manager mode logic
+        loadGameStateFromLocalStorage();
+        initializeSwipe();
+    }
+});
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
