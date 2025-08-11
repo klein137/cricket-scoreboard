@@ -851,29 +851,41 @@
 }
 
 
-    function enableLiveSync() {
-    const ref = firebase.database().ref("gameState");
+    function enableLiveSync(isViewOnly = false) {
+    const dbRef = firebase.database().ref("liveGameState");
 
-    // 🔹 Fetch current game state immediately for viewers
-    ref.once("value").then(snapshot => {
-        if (snapshot.exists()) {
-            gameState = snapshot.val();
-            updateAllDisplay();
-        }
-    });
-
-    // 🔹 Keep listening for updates
-    ref.on("value", snapshot => {
-        if (snapshot.exists()) {
-            const fetchedState = snapshot.val();
-            if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
-                gameState = fetchedState;
-                updateAllDisplay();
+    if (isViewOnly) {
+        // Viewer mode: Only listen for updates from Firebase
+        dbRef.once("value").then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                gameState = data;
+                updateUIFromGameState();
             }
-        }
-    });
-}
+        });
 
+        dbRef.on("value", snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                gameState = data;
+                updateUIFromGameState();
+            }
+        });
+
+    } else {
+        // Manager mode: Push updates to Firebase whenever local state changes
+        // Initial sync on load if state exists
+        const savedState = localStorage.getItem("liveGameState");
+        if (savedState) {
+            syncLiveScore();
+        }
+
+        // Optional: auto sync every 3 seconds
+        setInterval(() => {
+            syncLiveScore();
+        }, 3000);
+    }
+}
 
     function updateTeamName(team) {
         const input = document.getElementById(`team${team}-name`);
@@ -1987,11 +1999,9 @@ function updatePageDisplay() {
     const urlParams = new URLSearchParams(window.location.search);
 
     if (urlParams.get("view") === "live") {
-        // Hide login screen, show app
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
-        // Disable all controls for view-only mode except summary
         document.querySelectorAll('button, input, select').forEach(el => {
             el.disabled = true;
         });
@@ -2000,38 +2010,12 @@ function updatePageDisplay() {
         }
 
         alert("You are in view-only mode.");
-
-        // Directly load game state from Firebase once at start
-        const dbRef = firebase.database().ref("liveGameState");
-        dbRef.once("value").then(snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                gameState = data;
-                updateUIFromGameState(); // Your function to refresh the scoreboard UI
-            }
-        });
-
-        // Keep listening for updates in real time
-        dbRef.on("value", snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                gameState = data;
-                updateUIFromGameState();
-            }
-        });
-
+        enableLiveSync(true); // true = view-only mode
         initializeSwipe();
 
     } else {
-        // Manager mode logic
         loadGameStateFromLocalStorage();
-
-        // Sync local state to Firebase if exists (after reload)
-        const savedState = localStorage.getItem("liveGameState");
-        if (savedState) {
-            syncLiveScore();
-        }
-
+        enableLiveSync(false); // false = manager mode
         initializeSwipe();
     }
 });
