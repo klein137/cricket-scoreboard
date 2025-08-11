@@ -1171,7 +1171,7 @@
     }
 
     // Add ball to over & history
-     gameState.currentOver.push(ball);
+    gameState.currentOver.push(ball);
     gameState.ballHistory.push(ball);
 
     if (
@@ -1180,14 +1180,14 @@
     ) {
         swapBatsmen(false);
     }
+    
+    // Call the update functions after every ball, regardless of the outcome
+    updateAllDisplay();
+    checkMatchEnd();
+    syncLiveScore();
 
     if (battingTeam.balls === 6) {
         endOver(true);
-    } else {
-        // **FIX**: Call updateAllDisplay() and sync after every ball
-        updateAllDisplay();
-        checkMatchEnd();
-        syncLiveScore(true);
     }
 }
 
