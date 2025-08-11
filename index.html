@@ -1986,37 +1986,49 @@ function updatePageDisplay() {
         }
     }
     
-    document.addEventListener('DOMContentLoaded', () => {
-    setCurrentDate();
-
-    const summaryButton = document.getElementById('end-match-btn');
-    if (summaryButton) {
-        summaryButton.addEventListener('click', () => {
-            showMatchSummary();
-        });
-    }
-
+    // ====== VIEW-ONLY MODE ======
+document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
 
     if (urlParams.get("view") === "live") {
-        document.getElementById("login-screen").style.display = "none";
-        document.querySelector(".app-container").style.display = "block";
+        console.log("📡 View-only mode activated");
 
-        document.querySelectorAll('button, input, select').forEach(el => {
-            el.disabled = true;
-        });
+        // Hide login screen and show scoreboard
+        const loginScreen = document.getElementById("login-screen");
+        if (loginScreen) loginScreen.style.display = "none";
+
+        const scoreboard = document.getElementById("scoreboard");
+        if (scoreboard) scoreboard.style.display = "block";
+
+        // Ensure the Summary button works in view mode
+        const summaryButton = document.getElementById("end-match-btn");
         if (summaryButton) {
-            summaryButton.disabled = false;
+            summaryButton.style.display = "inline-block"; // Make sure it's visible
+            summaryButton.addEventListener("click", () => {
+                if (typeof showMatchSummary === "function") {
+                    showMatchSummary();
+                } else {
+                    console.warn("⚠ showMatchSummary function not found.");
+                }
+            });
         }
 
-        alert("You are in view-only mode.");
-        enableLiveSync(true); // true = view-only mode
-        initializeSwipe();
+        // Initialize Firebase if not already done
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
 
-    } else {
-        loadGameStateFromLocalStorage();
-        enableLiveSync(false); // false = manager mode
-        initializeSwipe();
+        // Listen for real-time updates
+        db.ref("matchData").on("value", (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                console.log("✅ Live data received:", data);
+                updateUI(data); // <-- your function to display data
+            } else {
+                console.warn("⚠ No match data found in database.");
+            }
+        });
     }
 });
     
