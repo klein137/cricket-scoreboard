@@ -1986,24 +1986,28 @@ function updatePageDisplay() {
         }
     }
     
-    // ====== VIEW-ONLY MODE ======
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
 
     if (urlParams.get("view") === "live") {
         console.log("📡 View-only mode activated");
 
-        // Hide login screen and show scoreboard
+        // Hide login screen (if exists)
         const loginScreen = document.getElementById("login-screen");
-        if (loginScreen) loginScreen.style.display = "none";
+        if (loginScreen) {
+            loginScreen.style.display = "none";
+        }
 
+        // Show scoreboard (if exists)
         const scoreboard = document.getElementById("scoreboard");
-        if (scoreboard) scoreboard.style.display = "block";
+        if (scoreboard) {
+            scoreboard.style.display = "block";
+        }
 
-        // Ensure the Summary button works in view mode
+        // Show Summary button (if exists)
         const summaryButton = document.getElementById("end-match-btn");
         if (summaryButton) {
-            summaryButton.style.display = "inline-block"; // Make sure it's visible
+            summaryButton.style.display = "inline-block";
             summaryButton.addEventListener("click", () => {
                 if (typeof showMatchSummary === "function") {
                     showMatchSummary();
@@ -2014,21 +2018,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Initialize Firebase if not already done
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
-
-        // Listen for real-time updates
-        db.ref("matchData").on("value", (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                console.log("✅ Live data received:", data);
-                updateUI(data); // <-- your function to display data
-            } else {
-                console.warn("⚠ No match data found in database.");
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
             }
-        });
+            const db = firebase.database();
+
+            // Listen for real-time updates
+            db.ref("matchData").on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    console.log("✅ Live data received:", data);
+                    if (typeof updateUI === "function") {
+                        updateUI(data);
+                    } else {
+                        console.warn("⚠ updateUI function not found.");
+                    }
+                } else {
+                    console.warn("⚠ No match data found in database.");
+                }
+            });
+        } catch (err) {
+            console.error("🔥 Firebase error:", err);
+        }
     }
 });
     
