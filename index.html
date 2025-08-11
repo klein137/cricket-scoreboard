@@ -1985,32 +1985,53 @@ function updatePageDisplay() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+
     if (urlParams.get("view") === "live") {
+        // Hide login screen, show app
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
+        // Disable all controls for view-only mode except summary
         document.querySelectorAll('button, input, select').forEach(el => {
             el.disabled = true;
         });
-
         if (summaryButton) {
             summaryButton.disabled = false;
         }
 
         alert("You are in view-only mode.");
-        // This is the correct way: the listener will fire with the initial data
-        // as soon as the connection is established.
-        enableLiveSync();
+
+        // Directly load game state from Firebase once at start
+        const dbRef = firebase.database().ref("liveGameState");
+        dbRef.once("value").then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                gameState = data;
+                updateUIFromGameState(); // Your function to refresh the scoreboard UI
+            }
+        });
+
+        // Keep listening for updates in real time
+        dbRef.on("value", snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                gameState = data;
+                updateUIFromGameState();
+            }
+        });
+
         initializeSwipe();
+
     } else {
         // Manager mode logic
         loadGameStateFromLocalStorage();
-        // ➡️ ADD THIS LINE: If local storage exists, also sync it to Firebase.
-        // This handles cases where the manager reloads the page.
+
+        // Sync local state to Firebase if exists (after reload)
         const savedState = localStorage.getItem("liveGameState");
         if (savedState) {
             syncLiveScore();
         }
+
         initializeSwipe();
     }
 });
