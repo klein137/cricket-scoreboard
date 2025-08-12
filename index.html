@@ -765,48 +765,55 @@
 
     const tossWinnerEl = document.getElementById('toss-winner');
     if (tossWinnerEl) {
-        tossWinnerEl.value = gameState.toss.winner || '';
+        tossWinnerEl.value = gameState.toss?.winner || '';
     }
 
     const tossDecisionEl = document.getElementById('toss-decision');
     if (tossDecisionEl) {
-        tossDecisionEl.value = gameState.toss.decision || '';
+        tossDecisionEl.value = gameState.toss?.decision || '';
     }
-    
+
+    // Team names
     document.querySelectorAll('#teamA-name').forEach(el => el.value = gameState.teams.A.name);
     document.querySelectorAll('#teamB-name').forEach(el => el.value = gameState.teams.B.name);
 
+    // Team scores & overs
     if (gameState.battingTeam && gameState.bowlingTeam) {
         const battingTeam = gameState.teams[gameState.battingTeam];
         const bowlingTeam = gameState.teams[gameState.bowlingTeam];
 
+        // Batting team display
         const team1NameEl = document.getElementById('team1-name');
         if (team1NameEl) team1NameEl.textContent = battingTeam.name;
 
         const team1ScoreEl = document.getElementById('team1-score');
         if (team1ScoreEl) team1ScoreEl.textContent = `${battingTeam.score}/${battingTeam.wickets}`;
 
-        const team1OversEl = document.getElementById('team1-overs');
         const totalBallsBatting = (battingTeam.overs * 6) + battingTeam.balls;
+        const team1OversEl = document.getElementById('team1-overs');
         if (team1OversEl) team1OversEl.textContent = `Overs: ${battingTeam.overs}.${battingTeam.balls}`;
 
         const team1RrEl = document.getElementById('team1-rr');
-        if (team1RrEl) team1RrEl.textContent = totalBallsBatting > 0 ? (battingTeam.score / (totalBallsBatting / 6)).toFixed(2) : '0.00';
+        if (team1RrEl) team1RrEl.textContent =
+            totalBallsBatting > 0 ? (battingTeam.score / (totalBallsBatting / 6)).toFixed(2) : '0.00';
 
+        // Bowling team display
         const team2NameEl = document.getElementById('team2-name');
         if (team2NameEl) team2NameEl.textContent = bowlingTeam.name;
 
         const team2ScoreEl = document.getElementById('team2-score');
         if (team2ScoreEl) team2ScoreEl.textContent = `${bowlingTeam.score}/${bowlingTeam.wickets}`;
 
-        const team2OversEl = document.getElementById('team2-overs');
         const totalBallsBowling = (bowlingTeam.overs * 6) + bowlingTeam.balls;
+        const team2OversEl = document.getElementById('team2-overs');
         if (team2OversEl) team2OversEl.textContent = `Overs: ${bowlingTeam.overs}.${bowlingTeam.balls}`;
 
         const team2RrEl = document.getElementById('team2-rr');
-        if (team2RrEl) team2RrEl.textContent = totalBallsBowling > 0 ? (bowlingTeam.score / (totalBallsBowling / 6)).toFixed(2) : '0.00';
+        if (team2RrEl) team2RrEl.textContent =
+            totalBallsBowling > 0 ? (bowlingTeam.score / (totalBallsBowling / 6)).toFixed(2) : '0.00';
     }
-    
+
+    // --- Player & match details ---
     updatePlayersDisplay('A');
     updatePlayersDisplay('B');
     updateBatsmanSelects();
@@ -814,14 +821,14 @@
     updateFielderSelect();
     updateBatsmanStats(1);
     updateBatsmanStats(2);
-    updateBowlerStats(); 
-    updateCurrentOverDisplay(); 
+    updateBowlerStats();
+    updateCurrentOverDisplay();
     updateLastOverDisplay();
-    updateLastWicketDisplay(); 
+    updateLastWicketDisplay();
     updateTargetDisplay();
 
-    // Only sync in manager mode
-    if (isManagerMode) {
+    // --- Push updates only in Manager Mode ---
+    if (typeof isManagerMode !== 'undefined' && isManagerMode) {
         saveGameStateToLocalStorage();
         syncLiveScore();
     }
@@ -1976,21 +1983,23 @@ function updatePageDisplay() {
     }
     
     
-// At the top of your script
+// ✅ Global flag
 let isManagerMode = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-	setCurrentDate();
-	const summaryButton = document.getElementById('end-match-btn');
+    const urlParams = new URLSearchParams(window.location.search);
+    isManagerMode = (urlParams.get("view") !== "live");
+
+    const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
         summaryButton.addEventListener('click', () => {
+            if (isManagerMode) syncLiveScore(); // push final update only in manager mode
             showMatchSummary();
         });
     }
-    const urlParams = new URLSearchParams(window.location.search);
-    isManagerMode = (urlParams.get("view") !== "live"); // ✅ Store mode once
 
     if (!isManagerMode) {
+        // VIEW-ONLY MODE
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
@@ -2006,6 +2015,7 @@ document.addEventListener('DOMContentLoaded', () => {
         enableLiveSync();
         initializeSwipe();
     } else {
+        // MANAGER MODE
         loadGameStateFromLocalStorage();
         const savedState = localStorage.getItem("liveGameState");
         if (savedState) {
