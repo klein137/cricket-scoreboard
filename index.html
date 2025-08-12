@@ -1187,15 +1187,18 @@
         swapBatsmen(false);
     }
 
-        if (battingTeam.balls === 6) {
+      
+
+    if (battingTeam.balls === 6) {
         endOver(true);
     } else {
         updateAllDisplay();
         checkMatchEnd();
-        syncLiveScore(); // <-- Corrected call
+        // >> Add this line below
+        console.log("State after a run:", JSON.stringify(gameState));
+        syncLiveScore();
     }
 }
-
 
 
 function addRuns(runs) {
