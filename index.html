@@ -844,16 +844,15 @@
     }
 
     function syncLiveScore() {
-    // Save locally
     localStorage.setItem("liveGameState", JSON.stringify(gameState));
 
-    // Push to Firebase only if manager is logged in
     if (isManagerLoggedIn) {
         firebase.database().ref("gameState").set(gameState)
             .then(() => console.log("Game state synced to Firebase."))
             .catch(error => console.error("Firebase sync failed:", error));
     }
 }
+
 
 
     function enableLiveSync() {
@@ -1186,15 +1185,15 @@
         swapBatsmen(false);
     }
 
-    if (battingTeam.balls === 6) {
+        if (battingTeam.balls === 6) {
         endOver(true);
     } else {
-        // **FIX**: Call updateAllDisplay() and sync after every ball
         updateAllDisplay();
         checkMatchEnd();
-        syncLiveScore(true);
+        syncLiveScore(); // <-- Corrected call
     }
 }
+
 
 
 function addRuns(runs) {
