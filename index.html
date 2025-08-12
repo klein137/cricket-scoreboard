@@ -1981,25 +1981,14 @@ function updatePageDisplay() {
             if (currentPageIndex > 0) { currentPageIndex--; updatePageDisplay(); }
         }
     }
-    
-    
-// ✅ Global flag
-let isManagerMode = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+let isManagerMode = true; // default
+
+document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
-    isManagerMode = (urlParams.get("view") !== "live");
-
-    const summaryButton = document.getElementById('end-match-btn');
-    if (summaryButton) {
-        summaryButton.addEventListener('click', () => {
-            if (isManagerMode) syncLiveScore(); // push final update only in manager mode
-            showMatchSummary();
-        });
-    }
-
-    if (!isManagerMode) {
-        // VIEW-ONLY MODE
+    
+    if (urlParams.get("view") === "live") {
+        isManagerMode = false; // View-only mode
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
@@ -2015,32 +2004,44 @@ document.addEventListener('DOMContentLoaded', () => {
         enableLiveSync();
         initializeSwipe();
     } else {
-        // MANAGER MODE
+        isManagerMode = true; // Manager mode
         loadGameStateFromLocalStorage();
+
         const savedState = localStorage.getItem("liveGameState");
         if (savedState) {
             syncLiveScore();
         }
         initializeSwipe();
     }
-});
-    
-    function verifyManager() {
-        const entered = document.getElementById('admin-password').value;
-        if (entered === managerPassword) {
-            isManagerLoggedIn = true;
-            document.getElementById('login-screen').style.display = 'none';
-            document.querySelector('.app-container').style.display = 'block';
-            loadGameStateFromLocalStorage();
-            initializeSwipe();
-            
-            // ➡️ ADD THIS LINE: Immediately sync to Firebase after a successful login.
-            syncLiveScore();
 
-        } else {
-            alert("Incorrect password!");
-        }
+    // Summary button handler
+    const summaryButton = document.getElementById('end-match-btn');
+    if (summaryButton) {
+        summaryButton.addEventListener('click', () => {
+            if (isManagerMode) {
+                syncLiveScore(); // Final update
+            }
+            showMatchSummary();
+        });
     }
+});
+
+// Manager login function
+function verifyManager() {
+    const entered = document.getElementById('admin-password').value;
+    if (entered === managerPassword) {
+        isManagerLoggedIn = true;
+        document.getElementById('login-screen').style.display = 'none';
+        document.querySelector('.app-container').style.display = 'block';
+        loadGameStateFromLocalStorage();
+        initializeSwipe();
+        
+        // Immediately sync to Firebase after a successful login
+        syncLiveScore();
+    } else {
+        alert("Incorrect password!");
+    }
+}
 </script>
 </body>
 </html>
