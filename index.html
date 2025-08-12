@@ -1985,10 +1985,12 @@ function updatePageDisplay() {
 let isManagerMode = true; // default
 
 document.addEventListener("DOMContentLoaded", () => {
+    const summaryButton = document.getElementById('end-match-btn');
+
     const urlParams = new URLSearchParams(window.location.search);
-    
     if (urlParams.get("view") === "live") {
-        isManagerMode = false; // View-only mode
+        // --- View-only mode ---
+        isManagerMode = false;
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
@@ -2004,7 +2006,8 @@ document.addEventListener("DOMContentLoaded", () => {
         enableLiveSync();
         initializeSwipe();
     } else {
-        isManagerMode = true; // Manager mode
+        // --- Manager mode ---
+        isManagerMode = true;
         loadGameStateFromLocalStorage();
 
         const savedState = localStorage.getItem("liveGameState");
@@ -2015,18 +2018,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Summary button handler
-    const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
         summaryButton.addEventListener('click', () => {
             if (isManagerMode) {
-                syncLiveScore(); // Final update
+                syncLiveScore();
             }
             showMatchSummary();
         });
     }
 });
 
-// Manager login function
+// Manager login
 function verifyManager() {
     const entered = document.getElementById('admin-password').value;
     if (entered === managerPassword) {
@@ -2035,8 +2037,6 @@ function verifyManager() {
         document.querySelector('.app-container').style.display = 'block';
         loadGameStateFromLocalStorage();
         initializeSwipe();
-        
-        // Immediately sync to Firebase after a successful login
         syncLiveScore();
     } else {
         alert("Incorrect password!");
