@@ -757,79 +757,76 @@
     }
     
     function updateAllDisplay() {
-        // --- Update elements on the Setup Page (Page 1) ---
-        const totalOversEl = document.getElementById('total-overs');
-        if (totalOversEl) {
-            totalOversEl.value = gameState.totalOvers;
-        }
+    // --- Update UI ---
+    const totalOversEl = document.getElementById('total-overs');
+    if (totalOversEl) {
+        totalOversEl.value = gameState.totalOvers;
+    }
 
-        const tossWinnerEl = document.getElementById('toss-winner');
-        if (tossWinnerEl) {
-            tossWinnerEl.value = gameState.toss.winner || '';
-        }
+    const tossWinnerEl = document.getElementById('toss-winner');
+    if (tossWinnerEl) {
+        tossWinnerEl.value = gameState.toss.winner || '';
+    }
 
-        const tossDecisionEl = document.getElementById('toss-decision');
-        if (tossDecisionEl) {
-            tossDecisionEl.value = gameState.toss.decision || '';
-        }
-        
-        document.querySelectorAll('#teamA-name').forEach(el => el.value = gameState.teams.A.name);
-        document.querySelectorAll('#teamB-name').forEach(el => el.value = gameState.teams.B.name);
-
-        // --- Update elements on the Live Scoreboard Page (Page 2) ---
-        if (gameState.battingTeam && gameState.bowlingTeam) {
-            const battingTeam = gameState.teams[gameState.battingTeam];
-            const bowlingTeam = gameState.teams[gameState.bowlingTeam];
-
-            const team1NameEl = document.getElementById('team1-name');
-            if (team1NameEl) team1NameEl.textContent = battingTeam.name;
-
-            const team1ScoreEl = document.getElementById('team1-score');
-            if (team1ScoreEl) team1ScoreEl.textContent = `${battingTeam.score}/${battingTeam.wickets}`;
-
-            const team1OversEl = document.getElementById('team1-overs');
-            const totalBallsBatting = (battingTeam.overs * 6) + battingTeam.balls;
-            if (team1OversEl) team1OversEl.textContent = `Overs: ${battingTeam.overs}.${battingTeam.balls}`;
-
-            const team1RrEl = document.getElementById('team1-rr');
-            if (team1RrEl) team1RrEl.textContent = totalBallsBatting > 0 ? (battingTeam.score / (totalBallsBatting / 6)).toFixed(2) : '0.00';
-
-
-            const team2NameEl = document.getElementById('team2-name');
-            if (team2NameEl) team2NameEl.textContent = bowlingTeam.name;
-
-            const team2ScoreEl = document.getElementById('team2-score');
-            if (team2ScoreEl) team2ScoreEl.textContent = `${bowlingTeam.score}/${bowlingTeam.wickets}`;
-
-            const team2OversEl = document.getElementById('team2-overs');
-            const totalBallsBowling = (bowlingTeam.overs * 6) + bowlingTeam.balls;
-            if (team2OversEl) team2OversEl.textContent = `Overs: ${bowlingTeam.overs}.${bowlingTeam.balls}`;
-
-            const team2RrEl = document.getElementById('team2-rr');
-            if (team2RrEl) team2RrEl.textContent = totalBallsBowling > 0 ? (bowlingTeam.score / (totalBallsBowling / 6)).toFixed(2) : '0.00';
-        }
-        
-        updatePlayersDisplay('A');
-        updatePlayersDisplay('B');
-        updateBatsmanSelects();
-        updateBowlerSelect();
-        updateFielderSelect();
-        updateBatsmanStats(1);
-        updateBatsmanStats(2);
-        updateBowlerStats(); 
-        updateCurrentOverDisplay(); 
-        updateLastOverDisplay();
-        updateLastWicketDisplay(); 
-        updateTargetDisplay();
+    const tossDecisionEl = document.getElementById('toss-decision');
+    if (tossDecisionEl) {
+        tossDecisionEl.value = gameState.toss.decision || '';
     }
     
-    function setCurrentDate() {
-        const dateElement = document.getElementById('current-date');
-        if (dateElement) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            dateElement.textContent = new Date().toLocaleDateString('en-IN', options);
-        }
+    document.querySelectorAll('#teamA-name').forEach(el => el.value = gameState.teams.A.name);
+    document.querySelectorAll('#teamB-name').forEach(el => el.value = gameState.teams.B.name);
+
+    if (gameState.battingTeam && gameState.bowlingTeam) {
+        const battingTeam = gameState.teams[gameState.battingTeam];
+        const bowlingTeam = gameState.teams[gameState.bowlingTeam];
+
+        const team1NameEl = document.getElementById('team1-name');
+        if (team1NameEl) team1NameEl.textContent = battingTeam.name;
+
+        const team1ScoreEl = document.getElementById('team1-score');
+        if (team1ScoreEl) team1ScoreEl.textContent = `${battingTeam.score}/${battingTeam.wickets}`;
+
+        const team1OversEl = document.getElementById('team1-overs');
+        const totalBallsBatting = (battingTeam.overs * 6) + battingTeam.balls;
+        if (team1OversEl) team1OversEl.textContent = `Overs: ${battingTeam.overs}.${battingTeam.balls}`;
+
+        const team1RrEl = document.getElementById('team1-rr');
+        if (team1RrEl) team1RrEl.textContent = totalBallsBatting > 0 ? (battingTeam.score / (totalBallsBatting / 6)).toFixed(2) : '0.00';
+
+        const team2NameEl = document.getElementById('team2-name');
+        if (team2NameEl) team2NameEl.textContent = bowlingTeam.name;
+
+        const team2ScoreEl = document.getElementById('team2-score');
+        if (team2ScoreEl) team2ScoreEl.textContent = `${bowlingTeam.score}/${bowlingTeam.wickets}`;
+
+        const team2OversEl = document.getElementById('team2-overs');
+        const totalBallsBowling = (bowlingTeam.overs * 6) + bowlingTeam.balls;
+        if (team2OversEl) team2OversEl.textContent = `Overs: ${bowlingTeam.overs}.${bowlingTeam.balls}`;
+
+        const team2RrEl = document.getElementById('team2-rr');
+        if (team2RrEl) team2RrEl.textContent = totalBallsBowling > 0 ? (bowlingTeam.score / (totalBallsBowling / 6)).toFixed(2) : '0.00';
     }
+    
+    updatePlayersDisplay('A');
+    updatePlayersDisplay('B');
+    updateBatsmanSelects();
+    updateBowlerSelect();
+    updateFielderSelect();
+    updateBatsmanStats(1);
+    updateBatsmanStats(2);
+    updateBowlerStats(); 
+    updateCurrentOverDisplay(); 
+    updateLastOverDisplay();
+    updateLastWicketDisplay(); 
+    updateTargetDisplay();
+
+    // --- 🔥 Push to Firebase if in manager mode ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") !== "live") {
+        saveGameStateToLocalStorage();
+        syncLiveScore();
+    }
+}
 
 
     function loadGameStateFromLocalStorage() {
