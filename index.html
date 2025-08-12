@@ -820,9 +820,8 @@
     updateLastWicketDisplay(); 
     updateTargetDisplay();
 
-    // --- 🔥 Push to Firebase if in manager mode ---
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("view") !== "live") {
+    // Only sync in manager mode
+    if (isManagerMode) {
         saveGameStateToLocalStorage();
         syncLiveScore();
     }
@@ -1976,18 +1975,22 @@ function updatePageDisplay() {
         }
     }
     
-    document.addEventListener('DOMContentLoaded', () => {
-    setCurrentDate();
+    
+// At the top of your script
+let isManagerMode = false;
 
-    const summaryButton = document.getElementById('end-match-btn');
+document.addEventListener('DOMContentLoaded', () => {
+	setCurrentDate();
+	const summaryButton = document.getElementById('end-match-btn');
     if (summaryButton) {
         summaryButton.addEventListener('click', () => {
             showMatchSummary();
         });
     }
-
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("view") === "live") {
+    isManagerMode = (urlParams.get("view") !== "live"); // ✅ Store mode once
+
+    if (!isManagerMode) {
         document.getElementById("login-screen").style.display = "none";
         document.querySelector(".app-container").style.display = "block";
 
@@ -2000,15 +2003,10 @@ function updatePageDisplay() {
         }
 
         alert("You are in view-only mode.");
-        // This is the correct way: the listener will fire with the initial data
-        // as soon as the connection is established.
         enableLiveSync();
         initializeSwipe();
     } else {
-        // Manager mode logic
         loadGameStateFromLocalStorage();
-        // ➡️ ADD THIS LINE: If local storage exists, also sync it to Firebase.
-        // This handles cases where the manager reloads the page.
         const savedState = localStorage.getItem("liveGameState");
         if (savedState) {
             syncLiveScore();
