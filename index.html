@@ -742,7 +742,7 @@
     };
 
     let isManagerLoggedIn = false;
-    const managerPassword = "110604"; // Set your manager password here
+    const managerPassword = "9612"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyDRKiA-PyUaOhj9oZxb9kUWD1gEGlVD0TY', 'authDomain': 'cricket-scoreboard-137.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-137-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-137', 'storageBucket': 'cricket-scoreboard-137.firebasestorage.app', 'messagingSenderId': '322609618880', 'appId': '1:322609618880:web:11a759155143c94b34f225'};
     firebase.initializeApp(firebaseConfig);
@@ -858,7 +858,7 @@
     function enableLiveSync() {
     const ref = firebase.database().ref("gameState");
 
-    // 🔹 Fetch current game state immediately for viewers
+    // Fetch current game state immediately for viewers
     ref.once("value").then(snapshot => {
         if (snapshot.exists()) {
             gameState = snapshot.val();
@@ -866,14 +866,13 @@
         }
     });
 
-    // 🔹 Keep listening for updates
+    // Keep listening for updates
     ref.on("value", snapshot => {
         if (snapshot.exists()) {
-            const fetchedState = snapshot.val();
-            if (JSON.stringify(fetchedState) !== JSON.stringify(gameState)) {
-                gameState = fetchedState;
-                updateAllDisplay();
-            }
+            // Update the game state with the new data
+            gameState = snapshot.val();
+            // Call the function to re-render the entire UI
+            updateAllDisplay();
         }
     });
 }
