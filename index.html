@@ -651,6 +651,39 @@ body {
     cursor: pointer;
 }
 
+.modal {
+    display: none; /* Crucial: This keeps it hidden by default */
+    position: fixed;
+    z-index: 10;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    position: relative;
+}
+.close {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+
     </style>
 </head>
 
@@ -665,6 +698,44 @@ body {
     <br>
     For live, view-only scoreboard, use the URL provided below:</p>
     <pre><a href="?view=live" style="color:var(--accent-blue);">https://rebrand.ly/cricket-scoreboard-65076c</a></pre>
+</div>
+    
+    <!-- History Modal -->
+<div id="historyModal" style="
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:1000;
+" onclick="if(event.target.id==='historyModal') closeHistoryModal()">
+    <div style="
+        background:#1e293b; color:white; padding:20px; border-radius:10px;
+        max-width:90%; max-height:90%; overflow-y:auto; position:relative;
+    ">
+        <button onclick="closeHistoryModal()" style="
+            position:absolute; top:10px; right:10px; background:red; color:white;
+            border:none; border-radius:50%; width:30px; height:30px; font-weight:bold; cursor:pointer;
+        ">×</button>
+        <h3>Match History</h3>
+        <hr>
+        <div id="match-history-container"></div>
+    </div>
+</div>
+
+<!-- Summary Modal -->
+<div id="summaryModal" style="
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:2000;
+" onclick="if(event.target.id==='summaryModal') closeSummaryModal()">
+    <div style="
+        background:#1e293b; color:white; padding:20px; border-radius:10px;
+        max-width:90%; max-height:90%; overflow-y:auto; position:relative;
+    ">
+        <button onclick="closeSummaryModal()" style="
+            position:absolute; top:10px; right:10px; background:red; color:white;
+            border:none; border-radius:50%; width:30px; height:30px; font-weight:bold; cursor:pointer;
+        ">×</button>
+        <h3>Match Summary</h3>
+        <hr>
+        <div id="summary-modal-content"></div>
+    </div>
 </div>
 
     <div class="app-container" style="display:none;">
@@ -741,10 +812,6 @@ body {
                 <button id="match-history-btn" class="action-btn">Match History</button>
             </div>
         </div>
-        <div id="history-page" class="page">
-    <h2>Match History</h2>
-    <div id="match-history-container"></div>
-</div>
         
         <div id="setup-page" class="page">
             <div class="header">
@@ -911,7 +978,7 @@ body {
 
     let isManagerLoggedIn = false;
     // >> IMPORTANT: SET YOUR PASSWORD HERE
-    const managerPassword = ""; // Set your manager password here
+    const managerPassword = "110604"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyDRKiA-PyUaOhj9oZxb9kUWD1gEGlVD0TY', 'authDomain': 'cricket-scoreboard-137.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-137-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-137', 'storageBucket': 'cricket-scoreboard-137.firebasestorage.app', 'messagingSenderId': '322609618880', 'appId': '1:322609618880:web:11a759155143c94b34f225'};
     firebase.initializeApp(firebaseConfig);
@@ -2223,69 +2290,44 @@ function updateTargetDisplay() {
     }
 }
 
-
 let matchHistory = JSON.parse(localStorage.getItem('matchHistory')) || [];
-
-// Save a completed match to history
-function saveMatchToHistory(matchData) {
-    matchHistory.push({
-        ...matchData,
-        date: new Date().toLocaleString()
-    });
-    localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
-}
-
 
 function showHistoryPage() {
     const historyContainer = document.getElementById('match-history-container');
+    if (!historyContainer) return;
     historyContainer.innerHTML = '';
 
     if (matchHistory.length === 0) {
         historyContainer.innerHTML = '<p>No match history found.</p>';
-        return;
-    }
+    } else {
+        matchHistory.forEach((match, index) => {
+            const matchDiv = document.createElement('div');
+            matchDiv.className = 'history-item';
+            matchDiv.style.border = "1px solid rgba(255,255,255,0.2)";
+            matchDiv.style.marginBottom = "10px";
+            matchDiv.style.padding = "10px";
+            matchDiv.style.borderRadius = "8px";
+            matchDiv.style.background = "rgba(255,255,255,0.05)";
 
-    matchHistory.forEach((match, index) => {
-        const matchDiv = document.createElement('div');
-        matchDiv.className = 'history-item';
-        matchDiv.style.border = "1px solid rgba(255,255,255,0.2)";
-        matchDiv.style.marginBottom = "10px";
-        matchDiv.style.padding = "10px";
-        matchDiv.style.borderRadius = "8px";
-        matchDiv.style.background = "rgba(255,255,255,0.05)";
-
-        matchDiv.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <h3 style="margin:0;">Match ${index + 1} - ${match.date}</h3>
-                <div>
-                    <button onclick="toggleHistoryDetails(${index})" style="margin-right:5px;background:#007bff;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">View</button>
-                    <button onclick="deleteMatchFromHistory(${index})" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">Delete</button>
+            matchDiv.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h3 style="margin:0;">Match ${index + 1} - ${match.date}</h3>
+                    <div>
+                        <button onclick="openSummaryModal(${index})" style="margin-right:5px;background:#007bff;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">View</button>
+                        <button onclick="deleteMatchFromHistory(${index})" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">Delete</button>
+                    </div>
                 </div>
-            </div>
-            <div id="history-details-${index}" style="display:none;margin-top:10px;">
-                ${match.fullSummary || `
-                    <p><strong>Teams:</strong> ${match.team1 || 'N/A'} vs ${match.team2 || 'N/A'}</p>
-                    <p><strong>Result:</strong> ${match.result || 'N/A'}</p>
-                `}
-            </div>
-        `;
-        historyContainer.appendChild(matchDiv);
-    });
-
-    // Switch to history page
-    const pages = document.querySelectorAll('.page');
-    currentPageIndex = Array.from(pages).findIndex(p => p.id === 'history-page');
-    updatePageDisplay();
-}
-
-
-function toggleHistoryDetails(index) {
-    const details = document.getElementById(`history-details-${index}`);
-    if (details) {
-        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            `;
+            historyContainer.appendChild(matchDiv);
+        });
     }
+
+    document.getElementById('historyModal').style.display = 'flex';
 }
 
+function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+}
 
 function deleteMatchFromHistory(index) {
     if (confirm("Are you sure you want to delete this match from history?")) {
@@ -2295,13 +2337,23 @@ function deleteMatchFromHistory(index) {
     }
 }
 
+// ===== SUMMARY MODAL =====
+function openSummaryModal(index) {
+    const summaryContainer = document.getElementById('summary-modal-content');
+    const match = matchHistory[index];
 
-document.addEventListener('DOMContentLoaded', () => {
-    const historyBtn = document.getElementById('match-history-btn');
-    if (historyBtn) {
-        historyBtn.addEventListener('click', showHistoryPage);
-    }
-});
+    summaryContainer.innerHTML = match.fullSummary || `
+        <p><strong>Teams:</strong> ${match.team1 || 'N/A'} vs ${match.team2 || 'N/A'}</p>
+        <p><strong>Result:</strong> ${match.result || 'N/A'}</p>
+    `;
+
+    document.getElementById('summaryModal').style.display = 'flex';
+}
+
+function closeSummaryModal() {
+    document.getElementById('summaryModal').style.display = 'none';
+}
+
 
     function toggleExtraButtons() {
             const container = document.getElementById("extra-buttons-container");
@@ -2414,7 +2466,6 @@ function updatePageDisplay() {
     if (summaryButton) summaryButton.disabled = false;
     if (historyBtn) historyBtn.disabled = false;
 
-    alert("You are in view-only mode.");
     enableLiveSync();
     initializeSwipe();
   } else {
@@ -2439,7 +2490,6 @@ function updatePageDisplay() {
     if (allowedButtons.includes(button.id)) return;
 
     event.preventDefault();
-    alert('Match completed! Please start a new match.');
   });
 });
     
