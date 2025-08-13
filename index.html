@@ -831,12 +831,104 @@ input[type="text"], input[type="number"], input[type="password"], select {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-    const appContainer = document.querySelector('.app-container');
-    let pages = []; 
-    let currentPageIndex = 0;
-    let touchstartX = 0;
-    let touchendX = 0;
-    const swipeThreshold = 50; 
+    // Variable declarations
+const appContainer = document.querySelector('.app-container');
+let pages = [];
+let currentPageIndex = 0;
+let touchstartX = 0;
+let touchendX = 0;
+const swipeThreshold = 50;
+
+// Function to navigate to the next page
+function goToNextPage() {
+    if (currentPageIndex < pages.length - 1) {
+        currentPageIndex++;
+        updatePageDisplay();
+    }
+}
+
+// Function to navigate to the previous page
+function goToPreviousPage() {
+    if (currentPageIndex > 0) {
+        currentPageIndex--;
+        updatePageDisplay();
+    }
+}
+
+// Optional: Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') {
+        goToNextPage();
+    } else if (e.key === 'ArrowLeft') {
+        goToPreviousPage();
+    }
+});
+
+// Function to initialize swipe functionality
+function initializeSwipe() {
+    pages = document.querySelectorAll('.page');
+    updatePageDisplay();
+
+    // Ensure appContainer exists before adding event listeners
+    if (appContainer) {
+        // Touch events for mobile
+        appContainer.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        });
+
+        appContainer.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            handleSwipeGesture();
+        });
+
+        // Mouse events for desktop
+        appContainer.addEventListener('mousedown', e => {
+            touchstartX = e.screenX;
+        });
+
+        appContainer.addEventListener('mouseup', e => {
+            touchendX = e.screenX;
+            handleSwipeGesture();
+        });
+    }
+}
+
+// Function to update page display based on currentPageIndex
+function updatePageDisplay() {
+    if (!pages || pages.length === 0) return;
+    pages.forEach((page, index) => {
+        page.classList.remove('active', 'left', 'right');
+        if (index === currentPageIndex) {
+            page.classList.add('active');
+        } else if (index < currentPageIndex) {
+            page.classList.add('left');
+        } else {
+            page.classList.add('right');
+        }
+    });
+}
+
+// Function to handle the swipe gesture
+function handleSwipeGesture() {
+    // Swipe left
+    if (touchendX < touchstartX - swipeThreshold) {
+        if (currentPageIndex < pages.length - 1) {
+            currentPageIndex++;
+            updatePageDisplay();
+        }
+    }
+    // Swipe right
+    if (touchendX > touchstartX + swipeThreshold) {
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+            updatePageDisplay();
+        }
+    }
+}
+
+// Ensure the initializeSwipe function is called on page load
+document.addEventListener('DOMContentLoaded', initializeSwipe);
+
     
     let gameState = {
         teams: {
@@ -867,7 +959,7 @@ input[type="text"], input[type="number"], input[type="password"], select {
 
     let isManagerLoggedIn = false;
     // >> IMPORTANT: SET YOUR PASSWORD HERE
-    const managerPassword = "U17137"; // Set your manager password here
+    const managerPassword = "9612"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyDRKiA-PyUaOhj9oZxb9kUWD1gEGlVD0TY', 'authDomain': 'cricket-scoreboard-137.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-137-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-137', 'storageBucket': 'cricket-scoreboard-137.firebasestorage.app', 'messagingSenderId': '322609618880', 'appId': '1:322609618880:web:11a759155143c94b34f225'};
     firebase.initializeApp(firebaseConfig);
@@ -2289,91 +2381,6 @@ function closeHistorySummaryModal() {
     document.getElementById('historySummaryModal').style.display = 'none';
 }
 		
-
-function goToNextPage() {
-    if (currentPageIndex < pages.length - 1) {
-        currentPageIndex++;
-        updatePageDisplay();
-    }
-}
-
-function goToPreviousPage() {
-    if (currentPageIndex > 0) {
-        currentPageIndex--;
-        updatePageDisplay();
-    }
-}
-
-// Optional: Keyboard navigation
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') {
-        goToNextPage();
-    } else if (e.key === 'ArrowLeft') {
-        goToPreviousPage();
-    }
-});
-
-function initializeSwipe() {
-    pages = document.querySelectorAll('.page');
-    updatePageDisplay();
-
-    // Touch events for mobile
-    appContainer.addEventListener('touchstart', e => {
-        touchstartX = e.changedTouches[0].screenX;
-    });
-
-    appContainer.addEventListener('touchend', e => {
-        touchendX = e.changedTouches[0].screenX;
-        handleSwipeGesture();
-    });
-
-    // Mouse events for desktop
-    appContainer.addEventListener('mousedown', e => {
-        touchstartX = e.screenX;
-    });
-
-    appContainer.addEventListener('mouseup', e => {
-        touchendX = e.screenX;
-        handleSwipeGesture();
-    });
-}
-
-function updatePageDisplay() {
-    if (!pages || pages.length === 0) return;
-    pages.forEach((page, index) => {
-        page.classList.remove('active', 'left', 'right');
-        if (index === currentPageIndex) {
-            page.classList.add('active');
-        } else if (index < currentPageIndex) {
-            page.classList.add('left');
-        } else {
-            page.classList.add('right');
-        }
-    });
-}
-
-function handleSwipeGesture() {
-    // Check if the user is a manager or in view-only mode.
-    // The swipe functionality should be enabled for both.
-    // No need to add a specific check for view-only mode since the functionality is universal.
-    
-    // Swipe left
-    if (touchendX < touchstartX - swipeThreshold) {
-        if (currentPageIndex < pages.length - 1) {
-            currentPageIndex++;
-            updatePageDisplay();
-        }
-    }
-    // Swipe right
-    if (touchendX > touchstartX + swipeThreshold) {
-        if (currentPageIndex > 0) {
-            currentPageIndex--;
-            updatePageDisplay();
-        }
-    }
-}
-
-    
     
 document.addEventListener('DOMContentLoaded', () => {
     setCurrentDate();
