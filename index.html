@@ -2289,7 +2289,8 @@ function closeHistorySummaryModal() {
     document.getElementById('historySummaryModal').style.display = 'none';
 }
 		
-		function goToNextPage() {
+
+function goToNextPage() {
     if (currentPageIndex < pages.length - 1) {
         currentPageIndex++;
         updatePageDisplay();
@@ -2312,8 +2313,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-		
-    function initializeSwipe() {
+function initializeSwipe() {
     pages = document.querySelectorAll('.page');
     updatePageDisplay();
 
@@ -2329,7 +2329,7 @@ document.addEventListener('keydown', (e) => {
 
     // Mouse events for desktop
     appContainer.addEventListener('mousedown', e => {
-        touchstartX = e.screenX; // Use same variable for consistency
+        touchstartX = e.screenX;
     });
 
     appContainer.addEventListener('mouseup', e => {
@@ -2352,15 +2352,27 @@ function updatePageDisplay() {
     });
 }
 
-
-    function handleSwipeGesture() {
-        if (touchendX < touchstartX - swipeThreshold) {
-            if (currentPageIndex < pages.length - 1) { currentPageIndex++; updatePageDisplay(); }
-        }
-        if (touchendX > touchstartX + swipeThreshold) {
-            if (currentPageIndex > 0) { currentPageIndex--; updatePageDisplay(); }
+function handleSwipeGesture() {
+    // Check if the user is a manager or in view-only mode.
+    // The swipe functionality should be enabled for both.
+    // No need to add a specific check for view-only mode since the functionality is universal.
+    
+    // Swipe left
+    if (touchendX < touchstartX - swipeThreshold) {
+        if (currentPageIndex < pages.length - 1) {
+            currentPageIndex++;
+            updatePageDisplay();
         }
     }
+    // Swipe right
+    if (touchendX > touchstartX + swipeThreshold) {
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+            updatePageDisplay();
+        }
+    }
+}
+
     
     
 document.addEventListener('DOMContentLoaded', () => {
