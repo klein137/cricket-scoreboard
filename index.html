@@ -2458,6 +2458,19 @@ function updatePageDisplay() {
     document.getElementById("login-screen").style.display = "none";
     document.querySelector(".app-container").style.display = "block";
 
+    // Disable all buttons except summary, history, and their close buttons
+    document.querySelectorAll('button').forEach(btn => {
+      const allowedIds = [
+        'end-match-btn',        // Summary button
+        'close-summary-btn',    // Close summary
+        'match-history-btn',    // History button
+        'close-history-btn'     // Close history
+      ];
+      if (!allowedIds.includes(btn.id)) {
+        btn.disabled = true;
+      }
+    });
+
     enableLiveSync();
     initializeSwipe();
   } else {
@@ -2477,7 +2490,14 @@ function updatePageDisplay() {
     const button = event.target.closest('button');
     if (!button) return;
 
-    const allowedButtons = ['reset-match-btn', 'end-match-btn', 'login-btn', 'match-history-btn'];
+    const allowedButtons = [
+      'reset-match-btn',
+      'end-match-btn',
+      'login-btn',
+      'match-history-btn',
+      'close-summary-btn',
+      'close-history-btn'
+    ];
 
     if (allowedButtons.includes(button.id)) return;
 
