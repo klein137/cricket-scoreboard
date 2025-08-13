@@ -978,7 +978,7 @@ body {
 
     let isManagerLoggedIn = false;
     // >> IMPORTANT: SET YOUR PASSWORD HERE
-    const managerPassword = "110604"; // Set your manager password here
+    const managerPassword = ""; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyDRKiA-PyUaOhj9oZxb9kUWD1gEGlVD0TY', 'authDomain': 'cricket-scoreboard-137.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-137-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-137', 'storageBucket': 'cricket-scoreboard-137.firebasestorage.app', 'messagingSenderId': '322609618880', 'appId': '1:322609618880:web:11a759155143c94b34f225'};
     firebase.initializeApp(firebaseConfig);
@@ -2309,45 +2309,35 @@ function showHistoryPage() {
             matchDiv.style.borderRadius = "8px";
             matchDiv.style.background = "rgba(255,255,255,0.05)";
 
-            let buttonsHTML = `
-                <button onclick="openSummaryModal(${index})" 
-                        style="margin-right:5px;background:#007bff;color:white;
-                        padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">
-                        View
-                </button>
-            `;
-
-            // Only show Delete if NOT in view-only mode
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get("view") !== "live") {
-                buttonsHTML += `
-                    <button onclick="deleteMatchFromHistory(${index})" 
-                            style="background:red;color:white;padding:5px 10px;
-                            border:none;border-radius:5px;cursor:pointer;">
-                            Delete
-                    </button>
-                `;
-            }
-
             matchDiv.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <h3 style="margin:0;">Match ${index + 1} - ${match.date}</h3>
-                    <div>${buttonsHTML}</div>
+                    <div>
+                        <button onclick="openSummaryModal(${index})" style="margin-right:5px;background:#007bff;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">View</button>
+                        <button onclick="deleteMatchFromHistory(${index})" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;">Delete</button>
+                    </div>
                 </div>
             `;
             historyContainer.appendChild(matchDiv);
         });
     }
 
-    // Always allow closing history modal
     document.getElementById('historyModal').style.display = 'flex';
 }
 
-// ====== Close Buttons Always Work ======
 function closeHistoryModal() {
     document.getElementById('historyModal').style.display = 'none';
 }
 
+function deleteMatchFromHistory(index) {
+    if (confirm("Are you sure you want to delete this match from history?")) {
+        matchHistory.splice(index, 1);
+        localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+        showHistoryPage();
+    }
+}
+
+// ===== SUMMARY MODAL =====
 function openSummaryModal(index) {
     const summaryContainer = document.getElementById('summary-modal-content');
     const match = matchHistory[index];
@@ -2456,7 +2446,7 @@ function updatePageDisplay() {
   if (historyBtn) {
     historyBtn.addEventListener('click', showHistoryPage);
   }
-
+    
   const resetBtn = document.getElementById('reset-match-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', resetMatch);
@@ -2467,21 +2457,6 @@ function updatePageDisplay() {
     // VIEW-ONLY MODE
     document.getElementById("login-screen").style.display = "none";
     document.querySelector(".app-container").style.display = "block";
-
-    // Disable all controls except summary, history, and close history button for view mode
-    document.querySelectorAll('button, input, select').forEach(el => {
-      el.disabled = true;
-    });
-
-    if (summaryButton) summaryButton.disabled = false;
-    if (historyBtn) historyBtn.disabled = false;
-
-    // Enable the close button for the history view
-    const closeHistoryBtn = document.getElementById('close-history-btn');
-    if (closeHistoryBtn) {
-      closeHistoryBtn.disabled = false;
-      closeHistoryBtn.addEventListener('click', closeHistoryPage); // Ensure the close function is also bound
-    }
 
     enableLiveSync();
     initializeSwipe();
@@ -2502,14 +2477,13 @@ function updatePageDisplay() {
     const button = event.target.closest('button');
     if (!button) return;
 
-    const allowedButtons = ['reset-match-btn', 'end-match-btn', 'login-btn', 'match-history-btn', 'close-history-btn']; // Add 'close-history-btn'
+    const allowedButtons = ['reset-match-btn', 'end-match-btn', 'login-btn', 'match-history-btn'];
 
     if (allowedButtons.includes(button.id)) return;
 
     event.preventDefault();
   });
 });
-
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
