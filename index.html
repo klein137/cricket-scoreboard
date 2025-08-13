@@ -312,14 +312,43 @@ input[type="text"], input[type="number"], input[type="password"], select {
 }
 
 /* ======================================================= */
+/* MODIFIED: Batsman styles added */
+/* ======================================================= */
+.batsman {
+    background-color: #2a2a2a;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    width: 48%;
+    position: relative;
+}
+
+.batsman-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--accent-green);
+}
+
+.batsman.on-strike {
+    border-color: var(--accent-green);
+}
+
+.batsman-stats {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.stat div:first-child {
+    font-size: 0.8em;
+    color: #b0b0b0;
+}
+
+/* ======================================================= */
 /* MODIFIED: Stacking and scrolling for modals */
 /* ======================================================= */
 
-/*
-    Crucial fix: All modals should be hidden by default.
-    They will be shown via JavaScript by adding/removing a class or
-    by directly manipulating the `display` property.
-*/
 .modal {
     display: none;
     position: fixed;
@@ -381,7 +410,6 @@ input[type="text"], input[type="number"], input[type="password"], select {
     cursor: pointer;
 }
 
-/* MODIFIED: Ensure the login modal is also hidden initially */
 #loginModal {
     display: none;
 }
@@ -558,6 +586,7 @@ input[type="text"], input[type="number"], input[type="password"], select {
         font-size: 1em;
     }
 }
+
 
     </style>
 </head>
@@ -740,9 +769,6 @@ input[type="text"], input[type="number"], input[type="password"], select {
         <button class="score-btn extra" onclick="addExtra('bye')">B</button>
         <button class="score-btn extra" onclick="addExtra('legbye')">LB</button>
         <button class="score-btn" onclick="undoLastBall()">Undo</button>
-        <button class="score-btn" id="toggle-extra-buttons" onclick="toggleExtraButtons()">...</button>
-    </div>
-    <div id="extra-buttons-container">
         <button class="score-btn extra" onclick="addExtra('overthrow')">Overthrow</button>
         <button class="score-btn extra" onclick="addExtra('penalty')">Penalty</button>
     </div>
@@ -841,7 +867,7 @@ input[type="text"], input[type="number"], input[type="password"], select {
 
     let isManagerLoggedIn = false;
     // >> IMPORTANT: SET YOUR PASSWORD HERE
-    const managerPassword = "110604"; // Set your manager password here
+    const managerPassword = "U17137"; // Set your manager password here
 
     const firebaseConfig = {'apiKey': 'AIzaSyDRKiA-PyUaOhj9oZxb9kUWD1gEGlVD0TY', 'authDomain': 'cricket-scoreboard-137.firebaseapp.com', 'databaseURL': 'https://cricket-scoreboard-137-default-rtdb.asia-southeast1.firebasedatabase.app', 'projectId': 'cricket-scoreboard-137', 'storageBucket': 'cricket-scoreboard-137.firebasestorage.app', 'messagingSenderId': '322609618880', 'appId': '1:322609618880:web:11a759155143c94b34f225'};
     firebase.initializeApp(firebaseConfig);
@@ -2262,12 +2288,6 @@ function openHistorySummaryModal(index) {
 function closeHistorySummaryModal() {
     document.getElementById('historySummaryModal').style.display = 'none';
 }
-
-
-    function toggleExtraButtons() {
-            const container = document.getElementById("extra-buttons-container");
-            container.classList.toggle("extra-visible");
-        }
 		
 		function goToNextPage() {
     if (currentPageIndex < pages.length - 1) {
