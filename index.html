@@ -2456,7 +2456,7 @@ function updatePageDisplay() {
   if (historyBtn) {
     historyBtn.addEventListener('click', showHistoryPage);
   }
-    
+
   const resetBtn = document.getElementById('reset-match-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', resetMatch);
@@ -2468,13 +2468,20 @@ function updatePageDisplay() {
     document.getElementById("login-screen").style.display = "none";
     document.querySelector(".app-container").style.display = "block";
 
-    // Disable all controls except summary + history for view mode
+    // Disable all controls except summary, history, and close history button for view mode
     document.querySelectorAll('button, input, select').forEach(el => {
       el.disabled = true;
     });
 
     if (summaryButton) summaryButton.disabled = false;
     if (historyBtn) historyBtn.disabled = false;
+
+    // Enable the close button for the history view
+    const closeHistoryBtn = document.getElementById('close-history-btn');
+    if (closeHistoryBtn) {
+      closeHistoryBtn.disabled = false;
+      closeHistoryBtn.addEventListener('click', closeHistoryPage); // Ensure the close function is also bound
+    }
 
     enableLiveSync();
     initializeSwipe();
@@ -2495,13 +2502,14 @@ function updatePageDisplay() {
     const button = event.target.closest('button');
     if (!button) return;
 
-    const allowedButtons = ['reset-match-btn', 'end-match-btn', 'login-btn', 'match-history-btn'];
+    const allowedButtons = ['reset-match-btn', 'end-match-btn', 'login-btn', 'match-history-btn', 'close-history-btn']; // Add 'close-history-btn'
 
     if (allowedButtons.includes(button.id)) return;
 
     event.preventDefault();
   });
 });
+
     
     function verifyManager() {
         const entered = document.getElementById('admin-password').value;
