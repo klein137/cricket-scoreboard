@@ -2193,425 +2193,123 @@ function undoLastBall() {
 }
 
     
-  // Cricket Match Summary - Mobile-Optimized PDF Export Function
-async function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    
-    const content = document.getElementById("summary-content");
-    
-    if (!content) {
-        alert("Summary content not found!");
-        return;
-    }
+  function downloadPDF() {
+    const summaryContentOriginal = document.getElementById("summary-content");
+    const pdfExportCloneContainer = document.getElementById("pdf-export-clone"); 
 
-    // Show loading indicator
-    showLoadingIndicator();
+    if (!summaryContentOriginal || !pdfExportCloneContainer) {
+        console.error("Required HTML elements not found for PDF export.");
+        alert("Error: Missing HTML elements for PDF export.");
+        return;
+    } 
 
-    try {
-        // Detect if device is mobile
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Pre-process content for better PDF rendering
-        await optimizeContentForPDF(content);
-        
-        // Adjust scale based on device type and screen size
-        const scale = isMobile ? Math.min(2, window.devicePixelRatio || 1) : 2.5;
-        
-        // Cricket scorecard optimized html2canvas options
-        const canvasOptions = {
-            scale: scale,
-            useCORS: true,
-            scrollY: -window.scrollY,
-            backgroundColor: "#004d4d",
-            allowTaint: true,
-            foreignObjectRendering: false,
-            imageTimeout: 15000,
-            removeContainer: true,
-            // Optimized for cricket tables and text
-            width: isMobile ? Math.min(content.scrollWidth, 1000) : content.scrollWidth,
-            height: content.scrollHeight,
-            // Better text rendering
-            letterRendering: true,
-            logging: false,
-            // Handle tables better
-            ignoreElements: function(element) {
-                return element.tagName === 'SCRIPT';
-            }
-        };
+    // Clear previous content in the clone container
+    pdfExportCloneContainer.innerHTML = ''; 
 
-        const canvas = await html2canvas(content, canvasOptions);
-        
-        // Use PNG for better text quality in cricket scorecards
-        const imgData = canvas.toDataURL("image/png", 1.0);
-        const pdf = new jsPDF('p', 'mm', 'a4');
+    // Clone the original summary content
+    const clonedSummaryContent = summaryContentOriginal.cloneNode(true); 
 
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    // Apply necessary styles for html2canvas to render correctly
+    // These styles are crucial as html2canvas renders based on visible DOM.
+    clonedSummaryContent.style.width = `${summaryContentOriginal.offsetWidth}px`; // Match original width
+    clonedSummaryContent.style.backgroundColor = '#0b3778'; // Ensure a solid background for the PDF
+    clonedSummaryContent.style.padding = '20px';
+    clonedSummaryContent.style.borderRadius = '10px';
+    clonedSummaryContent.style.color = '#fff'; // White text for contrast
+    clonedSummaryContent.style.fontSize = '14px'; // Base font size
+    clonedSummaryContent.style.lineHeight = '1.5'; 
 
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        let heightLeft = pdfHeight;
-        let position = 0;
+    // Apply specific styles for headings within the cloned content
+    clonedSummaryContent.querySelectorAll('h2, h3, h4').forEach(heading => {
+        heading.style.color = '#ffd700'; // Golden color for headings
+        heading.style.marginTop = '20px';
+        heading.style.marginBottom = '10px';
+        heading.style.borderBottom = '2px solid rgba(255,255,255,0.2)';
+        heading.style.paddingBottom = '5px';
+    });
+    // Style for the result heading
+    const resultHeading = clonedSummaryContent.querySelector('h3[style*="&#x1F3C6;"]');
+    if (resultHeading) {
+        resultHeading.style.fontSize = '1.5em';
+        resultHeading.style.textAlign = 'center';
+        resultHeading.style.color = '#76ff03'; // Greenish for winning
+    } 
 
-        // Add title page info
-        const matchTitle = extractMatchTitle();
-        pdf.setFontSize(16);
-        pdf.setTextColor(0, 77, 77);
-        
-        // Add first page with image
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+    // Apply specific styles for tables within the cloned content
+    clonedSummaryContent.querySelectorAll('table').forEach(table => {
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '10px 0';
+        table.style.backgroundColor = 'transparent'; // Important for background to show through
+    }); 
 
-        // Handle multi-page content
-        while (heightLeft > 0) {
-            position = heightLeft - pdfHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-            heightLeft -= pageHeight;
-        }
+    clonedSummaryContent.querySelectorAll('th, td').forEach(cell => {
+        cell.style.padding = '8px';
+        cell.style.border = '1px solid rgba(255,255,255,0.2)';
+        cell.style.color = 'inherit'; // Inherit text color from parent
+    }); 
 
-        // Generate PDF blob for mobile sharing
-        const pdfBlob = pdf.output('blob');
-        
-        // Try mobile sharing first, fallback to download
-        if (await tryMobileShare(pdfBlob, matchTitle)) {
-            hideLoadingIndicator();
-            return;
-        }
-        
-        // Fallback to traditional download
-        const fileName = generateFileName(matchTitle);
-        if (isMobile) {
-            await mobileDownload(pdfBlob, fileName);
-        } else {
-            pdf.save(fileName);
-        }
-        
-    } catch (error) {
-        console.error('PDF generation failed:', error);
-        alert('Failed to generate PDF. Please try again.');
-    } finally {
-        hideLoadingIndicator();
-        // Restore original content
-        restoreOriginalContent();
-    }
-}
+    clonedSummaryContent.querySelectorAll('tr').forEach((row, index) => {
+        if (index % 2 === 0) { // Even rows
+            row.style.backgroundColor = 'rgba(255,255,255,0.05)';
+        } else { // Odd rows
+            row.style.backgroundColor = 'rgba(255,255,255,0.02)';
+        }
+    });
+    clonedSummaryContent.querySelectorAll('th').forEach(th => {
+        th.style.backgroundColor = 'rgba(255,255,255,0.1)';
+    });
 
-// Pre-process content for better PDF rendering
-async function optimizeContentForPDF(content) {
-    // Store original styles
-    window.originalStyles = new Map();
-    
-    // Improve table rendering
-    const tables = content.querySelectorAll('table');
-    tables.forEach(table => {
-        window.originalStyles.set(table, table.style.cssText);
-        table.style.pageBreakInside = 'avoid';
-        table.style.borderCollapse = 'collapse';
-        table.style.fontSize = '12px';
-        
-        // Ensure table cells have proper borders
-        const cells = table.querySelectorAll('td, th');
-        cells.forEach(cell => {
-            window.originalStyles.set(cell, cell.style.cssText);
-            cell.style.border = '1px solid rgba(255,255,255,0.3)';
-            cell.style.padding = '6px';
-            cell.style.wordBreak = 'break-word';
-        });
-    });
-    
-    // Improve text rendering
-    const textElements = content.querySelectorAll('h3, h4, div, p, li');
-    textElements.forEach(element => {
-        window.originalStyles.set(element, element.style.cssText);
-        element.style.webkitFontSmoothing = 'antialiased';
-        element.style.mozOsxFontSmoothing = 'grayscale';
-    });
-    
-    // Wait for any dynamic content to render
-    await new Promise(resolve => setTimeout(resolve, 100));
-}
 
-// Restore original content styles
-function restoreOriginalContent() {
-    if (window.originalStyles) {
-        window.originalStyles.forEach((originalStyle, element) => {
-            if (element && element.style) {
-                element.style.cssText = originalStyle;
-            }
-        });
-        window.originalStyles.clear();
-    }
-}
+    // Append the cloned content to the hidden container
+    pdfExportCloneContainer.appendChild(clonedSummaryContent); 
 
-// Extract match information for filename
-function extractMatchTitle() {
-    const content = document.getElementById("summary-content");
-    if (!content) return "Cricket Match";
-    
-    // Try to extract team names from the content
-    const teamHeaders = content.querySelectorAll('h3');
-    const teams = [];
-    
-    teamHeaders.forEach(header => {
-        const text = header.textContent;
-        if (text.includes('Batting:')) {
-            const teamName = text.split('Batting:')[0].trim();
-            if (teamName && !teams.includes(teamName)) {
-                teams.push(teamName);
-            }
-        }
-    });
-    
-    if (teams.length >= 2) {
-        return `${teams[0]} vs ${teams[1]}`;
-    } else if (teams.length === 1) {
-        return `${teams[0]} Match`;
-    }
-    
-    return "Cricket Match";
-}
+    // Give the browser a moment to render the cloned content
+    setTimeout(() => {
+        // Target the cloned content directly inside the hidden container
+        html2canvas(clonedSummaryContent, {
+            scale: 2, // Increase scale for higher resolution in PDF
+            useCORS: true, // Important if you have images from external sources
+            backgroundColor: null, // Allow the background defined on the clone to take effect
+            logging: true, // Enable logging for debugging
+        }).then(canvas => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4 size 
 
-// Generate appropriate filename
-function generateFileName(matchTitle) {
-    const date = new Date();
-    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-    const cleanTitle = matchTitle.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-    return `${cleanTitle}_Summary_${dateStr}.pdf`;
-}
+            const imgData = canvas.toDataURL("image/png");
+            const imgProps = pdf.getImageProperties(imgData); 
 
-// Enhanced mobile sharing with match context
-async function tryMobileShare(pdfBlob, matchTitle) {
-    if (!navigator.share || !navigator.canShare) {
-        return false;
-    }
-    
-    const fileName = generateFileName(matchTitle);
-    const file = new File([pdfBlob], fileName, { type: "application/pdf" });
-    
-    const shareData = {
-        title: `${matchTitle} - Cricket Summary`,
-        text: `Check out the match summary for ${matchTitle}!`,
-        files: [file]
-    };
-    
-    if (navigator.canShare(shareData)) {
-        try {
-            await navigator.share(shareData);
-            return true;
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error('Sharing failed:', error);
-            }
-            return false;
-        }
-    }
-    
-    return false;
-}
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight(); 
 
-// Enhanced mobile download with proper filename
-async function mobileDownload(pdfBlob, fileName) {
-    const url = URL.createObjectURL(pdfBlob);
-    
-    // Create a temporary link for download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.style.display = 'none';
-    
-    document.body.appendChild(link);
-    
-    // For iOS Safari, open in new tab
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        link.target = '_blank';
-        link.click();
-        
-        // Show instructions for iOS users
-        setTimeout(() => {
-            alert(`PDF opened in new tab. Tap the share button in Safari to save "${fileName}" or share the file.`);
-        }, 500);
-    } else {
-        // For Android and other mobile browsers
-        link.click();
-        
-        // Show success message for Android
-        setTimeout(() => {
-            if (navigator.share) {
-                // If Web Share API is available but file sharing failed
-                alert(`PDF downloaded as "${fileName}". You can find it in your Downloads folder.`);
-            }
-        }, 500);
-    }
-    
-    document.body.removeChild(link);
-    
-    // Clean up the blob URL
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+            // Calculate image dimensions to fit PDF width while maintaining aspect ratio
+            const imgWidth = pdfWidth;
+            const imgHeight = (imgProps.height * imgWidth) / imgProps.width; 
 
-// Enhanced loading indicator with cricket theme
-function showLoadingIndicator() {
-    // Remove existing indicator if any
-    hideLoadingIndicator();
-    
-    const indicator = document.createElement('div');
-    indicator.id = 'pdf-loading-indicator';
-    indicator.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 77, 77, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            font-family: Arial, sans-serif;
-        ">
-            <div style="
-                background: white;
-                padding: 30px;
-                border-radius: 15px;
-                text-align: center;
-                max-width: 320px;
-                margin: 20px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            ">
-                <div style="
-                    width: 50px;
-                    height: 50px;
-                    border: 4px solid #f3f3f3;
-                    border-top: 4px solid #004d4d;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                    margin: 0 auto 20px;
-                "></div>
-                <h3 style="margin: 0 0 10px; color: #004d4d; font-size: 18px;">🏏 Generating Cricket Summary</h3>
-                <p style="margin: 0; color: #333; font-size: 14px;">Creating your match summary PDF...</p>
-                <p style="margin: 10px 0 0; font-size: 12px; color: #666;">This may take a moment on mobile devices</p>
-            </div>
-        </div>
-        <style>
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        </style>
-    `;
-    
-    document.body.appendChild(indicator);
-}
+            let heightLeft = imgHeight;
+            let position = 0; 
 
-function hideLoadingIndicator() {
-    const indicator = document.getElementById('pdf-loading-indicator');
-    if (indicator) {
-        indicator.remove();
-    }
-}
+            // Add the first page
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight; 
 
-// Lightweight version specifically for cricket scorecards
-async function downloadPDFLightweight() {
-    const { jsPDF } = window.jspdf;
-    
-    const content = document.getElementById("summary-content");
-    
-    if (!content) {
-        alert("Summary content not found!");
-        return;
-    }
+            // Add more pages if content overflows
+            while (heightLeft > 0) {
+                position -= pdfHeight; // Move up for the next section of the image
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            } 
 
-    showLoadingIndicator();
-
-    try {
-        // Minimal processing for speed
-        const canvas = await html2canvas(content, {
-            scale: 1.5,
-            useCORS: true,
-            scrollY: -window.scrollY,
-            backgroundColor: "#004d4d",
-            allowTaint: true,
-            foreignObjectRendering: false,
-            width: Math.min(content.scrollWidth, 900),
-            height: Math.min(content.scrollHeight, 1400),
-            logging: false
-        });
-
-        const imgData = canvas.toDataURL("image/jpeg", 0.7);
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        const pdfBlob = pdf.output('blob');
-        const matchTitle = extractMatchTitle();
-        
-        if (await tryMobileShare(pdfBlob, matchTitle)) {
-            hideLoadingIndicator();
-            return;
-        }
-        
-        const fileName = generateFileName(matchTitle);
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            await mobileDownload(pdfBlob, fileName);
-        } else {
-            pdf.save(fileName);
-        }
-        
-    } catch (error) {
-        console.error('PDF generation failed:', error);
-        alert('Failed to generate PDF. Please try again.');
-    } finally {
-        hideLoadingIndicator();
-    }
-}
-
-// Utility function to check if content is ready
-function isContentReady() {
-    const content = document.getElementById("summary-content");
-    if (!content) return false;
-    
-    // Check if tables are populated
-    const tables = content.querySelectorAll('table');
-    if (tables.length === 0) return false;
-    
-    // Check if there's actual data in tables
-    const hasData = Array.from(tables).some(table => {
-        const rows = table.querySelectorAll('tr');
-        return rows.length > 1; // More than just header
-    });
-    
-    return hasData;
-}
-
-// Auto-trigger PDF generation when summary is ready (optional)
-function autoGeneratePDFWhenReady() {
-    const checkInterval = setInterval(() => {
-        if (isContentReady()) {
-            clearInterval(checkInterval);
-            // Auto-generate after a short delay
-            setTimeout(() => {
-                if (confirm('Match summary is ready. Would you like to download the PDF?')) {
-                    downloadPDF();
-                }
-            }, 1000);
-        }
-    }, 500);
-    
-    // Stop checking after 30 seconds
-    setTimeout(() => clearInterval(checkInterval), 30000);
-}
-async function downloadPDFWithMetrics() {
-    const startTime = performance.now();
-    await downloadPDF();
-    const endTime = performance.now();
-    console.log(`PDF generation took ${endTime - startTime} milliseconds`);
+            pdf.save("Match_Scoreboard_Summary.pdf");
+        }).catch(err => {
+            console.error("Error generating PDF:", err);
+            alert("Failed to export PDF. Check your browser's console for more details.");
+        }).finally(() => {
+            // Clean up: Remove the cloned content from the hidden container
+            pdfExportCloneContainer.innerHTML = '';
+        });
+    }, 100); // A small delay to ensure DOM updates are processed
 }
 
     
